@@ -1,0 +1,67 @@
+{
+  "coverage": {
+    "start": "2012-03-01T00:00:00",
+    "end": "2012-06-27T23:55:00",
+    "timestamp_count": 34272,
+    "sensor_count": 207,
+    "timezone": null,
+    "speed_units": "unverified_source_units"
+  },
+  "overall_valid_speed": {
+    "n": 6519002,
+    "mean": 58.45972532036902,
+    "median": 63.22222222222222,
+    "p05": 25.625,
+    "p95": 68.88888888888889
+  },
+  "availability": {
+    "total_sensor_cells": 7094304,
+    "valid_sensor_cells": 6519002,
+    "excluded_sensor_cells": 575302,
+    "excluded_fraction": 0.08109350825676487,
+    "exact_zero_cells": 575302,
+    "exact_zero_fraction": 0.08109350825676487,
+    "nonzero_excluded_cells": 0
+  },
+  "temporal_associations": {
+    "lowest_mean_hour": {
+      "hour": 17,
+      "mean_speed": 49.853825249264425,
+      "valid_count": 275915
+    },
+    "highest_mean_hour": {
+      "hour": 22,
+      "mean_speed": 62.955628645426586,
+      "valid_count": 275726
+    },
+    "lowest_mean_day": {
+      "day_name": "Friday",
+      "mean_speed": 56.32498047456918,
+      "valid_count": 948783
+    },
+    "highest_mean_day": {
+      "day_name": "Sunday",
+      "mean_speed": 63.20881732340473,
+      "valid_count": 879543
+    },
+    "aggregation": "pooled_valid_sensor_cells"
+  },
+  "network_zero_evidence": {
+    "all_zero_timestamp_rows": 2148,
+    "all_zero_timestamp_fraction": 0.0626750700280112,
+    "contiguous_blocks": 97,
+    "longest_block": {
+      "start": "2012-03-26T08:25:00",
+      "end": "2012-03-27T16:05:00",
+      "steps": 381,
+      "slot_minutes": 1905
+    },
+    "all_zero_sensor_cells": 444636,
+    "share_of_zero_cells_in_all_zero_rows": 0.772874073095522
+  },
+  "limitations": {
+    "missingness_bias": "Means describe observed positive sensor cells; nonrandom unavailable readings may bias temporal and sensor comparisons.",
+    "physical_cause": "Simultaneous zeros and long runs support a missingness investigation but do not establish stopped traffic, outages or corruption.",
+    "preprocessing": "No trained preprocessing or imputation; full-period summaries are descriptive only."
+  }
+}

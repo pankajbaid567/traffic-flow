@@ -1,0 +1,3 @@
+day_type,timestamp_count,total_sensor_cells,valid_count,excluded_count,excluded_fraction,mean_speed
+Weekday,24480,5067360,4690209,377151,0.07442751255091408,57.20401903562581
+Weekend,9792,2026944,1828793,198151,0.0977584975213918,61.6801690327298

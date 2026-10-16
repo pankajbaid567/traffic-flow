@@ -1,0 +1,26 @@
+dataset: METR-LA
+expected_sensors: 207
+frequency: 5min
+zero_run_min_steps: 12
+flatline_min_steps: 12
+low_variance_std_threshold: 1.0
+discontinuity_threshold: 30.0
+speed_units: unverified_source_units
+timezone_policy: preserve_stored_timestamps_no_localization
+zero_policy: flag_exact_zero_as_benchmark_missing_preserve_raw
+positive_near_zero_policy: retain
+imputation: none_person_a
+split:
+  train_fraction: 0.70
+  validation_fraction: 0.10
+  test_fraction: 0.20
+  basis: complete_5min_timestamp_grid
+  rounding: floor_train_floor_validation_remainder_test
+history_steps: 12
+horizon_steps: [1, 3, 6, 12]
+peak_periods:
+  weekdays_only: true
+  morning_start_hour: 7
+  morning_end_hour_exclusive: 10
+  evening_start_hour: 16
+  evening_end_hour_exclusive: 19

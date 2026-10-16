@@ -1,0 +1,4 @@
+sensor_id,sensor_column_position,selection_reasons,unavailable_fraction,valid_sample_variance,display_start,display_end_inclusive,displayed_rows,selection_scope
+767523,123,lowest_exclusion_rate,0.0626750700280112,12.38246101946005,2012-03-01T00:00:00,2012-03-07T23:55:00,2016,whole-period descriptive EDA; not model selection
+718076,105,highest_exclusion_rate,0.2010387488328665,6.553472768544937,2012-03-01T00:00:00,2012-03-07T23:55:00,2016,whole-period descriptive EDA; not model selection
+717462,163,highest_valid_variance,0.06360877684407096,573.117210539464,2012-03-01T00:00:00,2012-03-07T23:55:00,2016,whole-period descriptive EDA; not model selection

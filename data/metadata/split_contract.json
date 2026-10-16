@@ -1,0 +1,28 @@
+{
+  "basis": "complete_5min_timestamp_grid",
+  "partitions": {
+    "train": {
+      "start_inclusive": "2012-03-01 00:00:00",
+      "end_inclusive": "2012-05-23 07:05:00",
+      "grid_timestamps": 23990
+    },
+    "validation": {
+      "start_inclusive": "2012-05-23 07:10:00",
+      "end_inclusive": "2012-06-04 04:40:00",
+      "grid_timestamps": 3427
+    },
+    "test": {
+      "start_inclusive": "2012-06-04 04:45:00",
+      "end_inclusive": "2012-06-27 23:55:00",
+      "grid_timestamps": 6855
+    }
+  },
+  "history_steps": 12,
+  "horizon_steps": [
+    1,
+    3,
+    6,
+    12
+  ],
+  "rule": "All targets for a sample must belong to one partition. History may use earlier observed timestamps only. Do not shuffle. Missing grid rows require explicit masks; row offsets on gapped data are not elapsed horizons."
+}

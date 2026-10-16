@@ -1,0 +1,75 @@
+{
+  "verified_at_utc": "2026-10-16T16:50:19.295978+00:00",
+  "notebooks": [
+    {
+      "notebook": "01_data_understanding.ipynb",
+      "executed_code_cells": 8,
+      "output_count": 34,
+      "error_count": 0,
+      "mime_counts": {
+        "text/html": 9,
+        "text/plain": 31,
+        "image/png": 11,
+        "text/markdown": 11
+      },
+      "bytes": 2084442,
+      "execution_method": "in_process_ipython",
+      "environment": {
+        "cell_timeout_seconds": 300,
+        "executed_at_utc": "2026-10-16T16:48:50.053357+00:00",
+        "method": "in_process_ipython",
+        "packages": {
+          "IPython": "8.25.0",
+          "PyYAML": "6.0.3",
+          "ipykernel": "6.28.0",
+          "jupyter_client": "8.6.0",
+          "matplotlib": "3.8.4",
+          "nbclient": "0.8.0",
+          "nbformat": "5.9.2",
+          "numpy": "1.26.4",
+          "pandas": "2.2.2",
+          "tables": "3.9.2"
+        },
+        "platform": "macOS-15.6.1-arm64-arm-64bit",
+        "python_executable": "/opt/anaconda3/bin/python",
+        "python_version": "3.12.2",
+        "reason": "Explicit --in-process selection: the local sandbox denies kernel socket binding. Real cells executed by IPython InteractiveShell.run_cell; no Jupyter kernel was started."
+      }
+    },
+    {
+      "notebook": "02_data_quality.ipynb",
+      "executed_code_cells": 9,
+      "output_count": 33,
+      "error_count": 0,
+      "mime_counts": {
+        "application/json": 2,
+        "text/plain": 30,
+        "text/html": 21,
+        "text/markdown": 7
+      },
+      "bytes": 217018,
+      "execution_method": "in_process_ipython",
+      "environment": {
+        "cell_timeout_seconds": 300,
+        "executed_at_utc": "2026-10-16T16:48:54.006644+00:00",
+        "method": "in_process_ipython",
+        "packages": {
+          "IPython": "8.25.0",
+          "PyYAML": "6.0.3",
+          "ipykernel": "6.28.0",
+          "jupyter_client": "8.6.0",
+          "matplotlib": "3.8.4",
+          "nbclient": "0.8.0",
+          "nbformat": "5.9.2",
+          "numpy": "1.26.4",
+          "pandas": "2.2.2",
+          "tables": "3.9.2"
+        },
+        "platform": "macOS-15.6.1-arm64-arm-64bit",
+        "python_executable": "/opt/anaconda3/bin/python",
+        "python_version": "3.12.2",
+        "reason": "Explicit --in-process selection: the local sandbox denies kernel socket binding. Real cells executed by IPython InteractiveShell.run_cell; no Jupyter kernel was started."
+      }
+    }
+  ]
+}

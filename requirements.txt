@@ -1,0 +1,9 @@
+# Person A only; Python 3.12 recommended. No graph-learning or model dependencies.
+numpy>=1.26.4,<3
+pandas>=2.2.2,<4
+matplotlib>=3.8.4,<4
+PyYAML>=6.0.1,<7
+tables>=3.9.2,<4
+nbformat>=5.9.2,<6
+nbclient>=0.8,<1
+ipykernel>=6.28,<8

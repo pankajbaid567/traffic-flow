@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+.mplconfig/
+.cache/
+.runtime/
+data/raw/*.h5
+DCRNN/*.h5
+data/raw/*.pkl
+data/raw/*.download
+data/processed/

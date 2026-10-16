@@ -1,0 +1,64 @@
+{
+  "files": {
+    "data/raw/adj_mx.pkl": {
+      "source_path": "/Users/pankajbaid/projects/AML/DCRNN/data/sensor_graph/adj_mx.pkl",
+      "source_url": "https://github.com/liyaguang/DCRNN/blob/602afd9d767d3aa1c9b3eac51710d6aeee12c227/data/sensor_graph/adj_mx.pkl",
+      "sha256": "a35687c6e15aa228dc45027b0ed2a0ea0f4ec78f573deb992c595092d12f61b3",
+      "bytes": 680459,
+      "recorded_at_utc": "2026-10-16T16:20:11.072293+00:00"
+    },
+    "data/raw/graph_sensor_locations.csv": {
+      "source_path": "/Users/pankajbaid/projects/AML/DCRNN/data/sensor_graph/graph_sensor_locations.csv",
+      "source_url": "https://github.com/liyaguang/DCRNN/blob/602afd9d767d3aa1c9b3eac51710d6aeee12c227/data/sensor_graph/graph_sensor_locations.csv",
+      "sha256": "eb8ea96e07358b45d0e4ba3b89c2673fa20c54af50150249e627389e749ade6f",
+      "bytes": 6341,
+      "recorded_at_utc": "2026-10-16T16:20:11.072967+00:00"
+    },
+    "data/raw/graph_sensor_ids.txt": {
+      "source_path": "/Users/pankajbaid/projects/AML/DCRNN/data/sensor_graph/graph_sensor_ids.txt",
+      "source_url": "https://github.com/liyaguang/DCRNN/blob/602afd9d767d3aa1c9b3eac51710d6aeee12c227/data/sensor_graph/graph_sensor_ids.txt",
+      "sha256": "3ba026caa2e6263ab0ea54b0fa1b125dbfa7216544cd05313b555e826292b990",
+      "bytes": 1448,
+      "recorded_at_utc": "2026-10-16T16:20:11.073389+00:00"
+    },
+    "data/raw/provenance/DCRNN_README.md": {
+      "source_path": "/Users/pankajbaid/projects/AML/DCRNN/README.md",
+      "source_url": "https://github.com/liyaguang/DCRNN/blob/602afd9d767d3aa1c9b3eac51710d6aeee12c227/README.md",
+      "sha256": "a6a05f7e8f5fb4613953bebd575f3cdf33705390de58181ed58078b455898e53",
+      "bytes": 7877,
+      "recorded_at_utc": "2026-10-16T16:20:11.074055+00:00"
+    },
+    "data/raw/provenance/DCRNN_LICENSE": {
+      "source_path": "/Users/pankajbaid/projects/AML/DCRNN/LICENSE",
+      "source_url": "https://github.com/liyaguang/DCRNN/blob/602afd9d767d3aa1c9b3eac51710d6aeee12c227/LICENSE",
+      "sha256": "29414ec274aafdfde2e0e5f5e55f136fcd3d5e8514ab54f1809298eeb1fd5a43",
+      "bytes": 1067,
+      "recorded_at_utc": "2026-10-16T16:20:11.074369+00:00"
+    },
+    "data/raw/provenance/DCRNN_metrics.py.txt": {
+      "source_path": "/Users/pankajbaid/projects/AML/DCRNN/lib/metrics.py",
+      "source_url": "https://github.com/liyaguang/DCRNN/blob/602afd9d767d3aa1c9b3eac51710d6aeee12c227/lib/metrics.py",
+      "sha256": "64575421c9ac1b0e14f2c3c11473acacc1b1f790a3344d0d6141939d154e0d6e",
+      "bytes": 4371,
+      "recorded_at_utc": "2026-10-16T16:20:11.074873+00:00"
+    },
+    "data/raw/provenance/DCRNN_eval_baseline_methods.py.txt": {
+      "source_path": "/Users/pankajbaid/projects/AML/DCRNN/scripts/eval_baseline_methods.py",
+      "source_url": "https://github.com/liyaguang/DCRNN/blob/602afd9d767d3aa1c9b3eac51710d6aeee12c227/scripts/eval_baseline_methods.py",
+      "sha256": "dfb51d51bf0cb7df8c3883af4d9cddfaf116f2edb92f62f0ef454ca944eb8d17",
+      "bytes": 6034,
+      "recorded_at_utc": "2026-10-16T16:20:11.075222+00:00"
+    },
+    "data/raw/metr-la.h5": {
+      "source_path": "/Users/pankajbaid/projects/AML/traffic-flow-capstone/DCRNN/metr-la.h5",
+      "source_url": null,
+      "sha256": "64784b76d6fb8ec9bff4b6decafb354da2bb37840468fdccee5044e511277c05",
+      "bytes": 57038056,
+      "recorded_at_utc": "2026-10-16T16:41:13.338551+00:00",
+      "reference_distribution_url": "https://drive.google.com/open?id=10FOTa6HXPqX8Pf5WRoRwcFnW9BrNZEIX"
+    }
+  },
+  "dcrnn_commit": "602afd9d767d3aa1c9b3eac51710d6aeee12c227",
+  "official_dataset_folder": "https://drive.google.com/open?id=10FOTa6HXPqX8Pf5WRoRwcFnW9BrNZEIX",
+  "speed_data_present": true
+}

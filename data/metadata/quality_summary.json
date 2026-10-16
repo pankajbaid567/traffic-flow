@@ -1,0 +1,103 @@
+{
+  "validation_status": "warning",
+  "issues": [
+    "575302 suspect/invalid speed values are masked in valid_speed; raw values are preserved.",
+    "135 positive constant runs warrant inspection; readings are retained.",
+    "7990 large consecutive speed changes warrant inspection; readings are retained."
+  ],
+  "dimensions": {
+    "timestamps": 34272,
+    "unique_timestamps": 34272,
+    "sensors": 207,
+    "observed_cells": 7094304,
+    "expected_timestamps": 34272,
+    "expected_grid_cells": 7094304,
+    "missing_timestamp_cells": 0
+  },
+  "timestamp_validation": {
+    "start": "2012-03-01T00:00:00",
+    "end": "2012-06-27T23:55:00",
+    "timezone": null,
+    "timezone_note": "Naive source timestamps; no timezone inferred.",
+    "expected_sampling_minutes": 5.0,
+    "modal_sampling_minutes": 5.0,
+    "duplicate_rows": 0,
+    "chronologically_ordered": true,
+    "missing_timestamp_count": 0,
+    "missing_timestamps": [],
+    "off_grid_timestamp_count": 0,
+    "off_grid_timestamps": [],
+    "gap_count": 0
+  },
+  "value_counts": {
+    "missing_nan": 0,
+    "infinite": 0,
+    "zero": 575302,
+    "negative_finite": 0,
+    "valid_positive_finite": 6519002,
+    "invalid_total": 575302
+  },
+  "zero_evidence": {
+    "all_zero_timestamp_rows": 2148,
+    "at_least_90pct_zero_timestamp_rows": 2148,
+    "all_invalid_timestamp_rows": 2148,
+    "total_zero_runs": 25963,
+    "possible_outage_runs": 6942,
+    "maximum_zero_run_steps": 1683,
+    "interpretation": "Zero is suspect, not proof of an outage or genuinely stopped traffic."
+  },
+  "sensor_quality": {
+    "no_valid_observations": 0,
+    "constant_sensors": 0,
+    "raw_constant_sensors": 0,
+    "all_zero_sensors": 0,
+    "low_variance_sensors": 0,
+    "positive_flatline_runs": 135,
+    "large_discontinuities": 7990
+  },
+  "metadata_validation": {
+    "provided": true,
+    "sensor_count": 207,
+    "duplicate_sensor_ids": 0,
+    "missing_sensor_ids": [],
+    "extra_sensor_ids": [],
+    "all_sensors_covered": true
+  },
+  "graph_validation": {
+    "sensor_ids_provided": true,
+    "adjacency_provided": true,
+    "used_as_features": false,
+    "sensor_count": 207,
+    "duplicate_sensor_ids": 0,
+    "same_sensor_set": true,
+    "same_sensor_order": true,
+    "missing_sensor_ids": [],
+    "extra_sensor_ids": [],
+    "adjacency_shape": [
+      207,
+      207
+    ],
+    "adjacency_shape_valid": true,
+    "adjacency_finite": true
+  },
+  "policy": {
+    "expected_sensors": 207,
+    "frequency": "0 days 00:05:00",
+    "low_variance_std_threshold": 1.0,
+    "zero_run_min_steps": 12,
+    "flatline_min_steps": 12,
+    "discontinuity_threshold": 30.0,
+    "invalid_values": [
+      "NaN",
+      "infinity",
+      "negative",
+      "exact zero"
+    ],
+    "positive_near_zero": "retained",
+    "imputation": "none",
+    "raw_modified": false,
+    "valid_std_ddof": 1
+  },
+  "generated_at_utc": "2026-10-16T16:48:51.671283+00:00",
+  "speed_sha256": "64784b76d6fb8ec9bff4b6decafb354da2bb37840468fdccee5044e511277c05"
+}

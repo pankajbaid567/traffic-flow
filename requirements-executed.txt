@@ -1,0 +1,17 @@
+# Exact direct analysis/notebook runtime versions used on Python 3.12.2 (conda-forge).
+# The pre-existing /opt/anaconda3 environment was used without modification.
+numpy==1.26.4
+pandas==2.2.2
+matplotlib==3.8.4
+PyYAML==6.0.3
+tables==3.9.2
+h5py==3.11.0
+nbformat==5.9.2
+nbclient==0.8.0
+ipykernel==6.28.0
+ipython==8.25.0
+jupyter-client==8.6.0
+jupyter-core==5.7.2
+pyzmq==25.1.2
+traitlets==5.14.3
+Pillow==10.3.0
