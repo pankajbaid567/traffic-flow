@@ -1,0 +1,94 @@
+# Configuration for Person B Feature Pipeline and Dataset Building
+dataset: METR-LA
+frequency: 5min
+
+# History and Horizons
+history_steps: 12  # 12 x 5min = 60 minutes historical context
+lags: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+
+horizon_steps: [1, 3, 6, 12]
+horizon_names:
+  1: 5min
+  3: 15min
+  6: 30min
+  12: 60min
+
+# Rolling Windows (in 5-minute steps, causal backward-looking only)
+rolling_windows:
+  mean_steps: [3, 6, 12]   # 15min, 30min, 60min
+  std_steps: [3, 6, 12]    # 15min, 30min, 60min
+  min_steps: [6]           # 30min
+  max_steps: [6]           # 30min
+
+# Trend Differences (speed_t - speed_t-step)
+trend_steps: [1, 3, 6]     # 5min, 15min, 30min
+
+# Temporal Features
+temporal:
+  include_hour_cyclic: true
+  include_dow_cyclic: true
+  include_weekend: true
+  include_peaks: true
+  peak_hours:
+    weekdays_only: true
+    morning_start: 7
+    morning_end: 10
+    evening_start: 16
+    evening_end: 19
+
+# Missingness & Imputation Policy
+missingness:
+  zero_as_missing: true
+  negative_as_missing: true
+  nan_as_missing: true
+  imputation_strategy: causal_ffill_then_training_median
+  include_missing_flags: true
+  missing_window_steps: 12  # count missing in 60min history
+
+# Feature Groups for Ablation Studies (Person D)
+ablation_groups:
+  lag_only:
+    - speed_lag_0
+    - speed_lag_1
+    - speed_lag_2
+    - speed_lag_3
+    - speed_lag_4
+    - speed_lag_5
+    - speed_lag_6
+    - speed_lag_7
+    - speed_lag_8
+    - speed_lag_9
+    - speed_lag_10
+    - speed_lag_11
+  temporal:
+    - hour_sin
+    - hour_cos
+    - dow_sin
+    - dow_cos
+    - is_weekend
+    - is_morning_peak
+    - is_evening_peak
+  rolling:
+    - rolling_mean_15min
+    - rolling_mean_30min
+    - rolling_mean_60min
+    - rolling_std_15min
+    - rolling_std_30min
+    - rolling_std_60min
+    - rolling_min_30min
+    - rolling_max_30min
+  trend:
+    - speed_change_5min
+    - speed_change_15min
+    - speed_change_30min
+  missingness:
+    - speed_missing_flag
+    - missing_count_60min
+
+# Paths
+paths:
+  raw_speed: data/raw/metr-la.h5
+  raw_adj: data/raw/adj_mx.pkl
+  split_contract: data/metadata/split_contract.json
+  sensors_csv: data/metadata/sensors.csv
+  processed_dir: data/processed
