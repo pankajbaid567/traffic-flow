@@ -1,4 +1,4 @@
-# Traffic flow capstone — Phase 1, Person A
+# Traffic flow capstone — Phase 1, Persons A and B
 
 This independent project contains Person A's METR-LA dataset engineering, quality investigation, exploratory analysis and handoff. The user's speed file was supplied in `DCRNN/metr-la.h5` within this project; graph assets came from the original sibling `../DCRNN` repository. Both source locations remain unchanged.
 
@@ -77,3 +77,24 @@ Read the [plan](reports/person_a_plan.md), [Person B handoff](reports/person_b_h
 The input history is 12 observations; target offsets are +1, +3, +6 and +12. Only the predicted sensor's own historical speed and temporal information may enter AML features. No flow/occupancy variables, neighboring speeds or graph-derived inputs are fabricated.
 
 Person A's work does not complete the team's Phase 1. Feature engineering, persistence/historical baselines, XGBoost, Random Forest and model evaluation belong to Persons B–E. Graph learning, SUMO and signal control are outside the current scope.
+
+## Person B — features and processed datasets
+
+Person B built the one feature pipeline that Persons C and D train on. Code is in `src/data/load_data.py`, `split.py`, `features.py` and `dataset_builder.py`; feature lists are also written down in `configs/features.yaml`. Read the [Person C/D handoff](reports/person_c_d_handoff.md) before training anything.
+
+```bash
+/opt/anaconda3/bin/python -m src.data.dataset_builder
+```
+
+This writes `data/processed/{train,val,test}.parquet` and `dataset_summary.json` (git-ignored, about 330 MB, ~12 s to rebuild). One row is one sensor at one prediction origin: 32 features, 4 raw targets (+5/+15/+30/+60 min) and 4 `target_valid_*` flags.
+
+| Split | Origins | Rows (×207 sensors) | First origin | Last origin |
+| --- | ---: | ---: | --- | --- |
+| Train | 23,967 | 4,961,169 | 2012-03-01 00:55 | 2012-05-23 06:05 |
+| Validation | 3,416 | 707,112 | 2012-05-23 07:05 | 2012-06-04 03:40 |
+| Test | 6,844 | 1,416,708 | 2012-06-04 04:40 | 2012-06-27 22:55 |
+
+- Zero / NaN / negative speeds are missing. Inputs are forward-filled (past only) and leading gaps get the sensor's training median; the medians are saved in `dataset_summary.json`.
+- Targets are raw and never filled. Filter on `target_valid_<h>` before training or scoring.
+- Origins whose targets cross a split boundary are dropped; history may come from the previous split.
+- Only the sensor's own speed plus time features are used. No neighbours or graph inputs.
