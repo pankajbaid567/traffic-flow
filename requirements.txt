@@ -7,3 +7,6 @@ tables>=3.9.2,<4
 nbformat>=5.9.2,<6
 nbclient>=0.8,<1
 ipykernel>=6.28,<8
+
+# Person B (parquet datasets)
+pyarrow>=15,<20
