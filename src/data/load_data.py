@@ -35,11 +35,19 @@ def load_raw_speed_data(
     if not path.is_file():
         raise FileNotFoundError(f"speed file not found: {path}")
 
-    with pd.HDFStore(path, mode="r") as store:
-        keys = store.keys()
-        if len(keys) != 1:
-            raise ValueError(f"expected one table in {path.name}, found {keys}")
-        df = store[keys[0]]
+    try:
+        with pd.HDFStore(path, mode="r") as store:
+            keys = store.keys()
+            if len(keys) != 1:
+                raise ValueError(f"expected one table in {path.name}, found {keys}")
+            df = store[keys[0]]
+    except Exception:
+        import tables
+        with tables.open_file(path, mode="r") as h5:
+            cols = [s.decode("utf-8") if isinstance(s, (bytes, np.bytes_)) else str(s) for s in h5.root.df.axis0.read()]
+            idx = pd.to_datetime(h5.root.df.axis1.read())
+            vals = h5.root.df.block0_values.read()
+            df = pd.DataFrame(vals, index=idx, columns=cols)
 
     df.index = pd.DatetimeIndex(df.index)
     df.columns = [str(c).strip() for c in df.columns]

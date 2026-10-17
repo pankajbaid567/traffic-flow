@@ -1,4 +1,4 @@
-# Traffic flow capstone — Phase 1, Persons A and B
+# Traffic flow capstone — Phase 1, Persons A, B, and D
 
 This independent project contains Person A's METR-LA dataset engineering, quality investigation, exploratory analysis and handoff. The user's speed file was supplied in `DCRNN/metr-la.h5` within this project; graph assets came from the original sibling `../DCRNN` repository. Both source locations remain unchanged.
 
@@ -98,3 +98,18 @@ This writes `data/processed/{train,val,test}.parquet` and `dataset_summary.json`
 - Targets are raw and never filled. Filter on `target_valid_<h>` before training or scoring.
 - Origins whose targets cross a split boundary are dropped; history may come from the previous split.
 - Only the sensor's own speed plus time features are used. No neighbours or graph inputs.
+
+## Person D — Random Forest models and feature ablations
+
+Person D implemented and executed the Random Forest models and feature ablation studies across all four horizons (5 min, 15 min, 30 min, 60 min).
+
+```bash
+python scripts/run_person_d.py --max-samples 0.1 --evaluate-test
+python -m unittest tests/test_person_d.py -v
+```
+
+- Code: `src/models/metrics.py`, `src/models/random_forest.py`, `scripts/run_person_d.py`.
+- Tests: `tests/test_person_d.py` (all tests passing).
+- Results & Report: `data/metadata/person_d_results.json`, `reports/person_d_report.md`.
+- All Random Forest models beat persistence baselines on both validation and test sets.
+

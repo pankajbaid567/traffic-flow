@@ -1,0 +1,56 @@
+"""Evaluation metrics matching DCRNN benchmark and Person E standards.
+
+Masked MAE, RMSE, and MAPE exclude null values (zeros or invalid values)
+consistent with Li et al. (ICLR 2018).
+"""
+from __future__ import annotations
+
+import numpy as np
+
+
+def masked_mae(y_true: np.ndarray, y_pred: np.ndarray, null_val: float = 0.0) -> float:
+    """Compute Mean Absolute Error excluding null_val."""
+    y_true = np.asarray(y_true, dtype=np.float64)
+    y_pred = np.asarray(y_pred, dtype=np.float64)
+    if np.isnan(null_val):
+        mask = ~np.isnan(y_true)
+    else:
+        mask = (~np.isnan(y_true)) & (y_true != null_val)
+    if not np.any(mask):
+        return 0.0
+    return float(np.mean(np.abs(y_true[mask] - y_pred[mask])))
+
+
+def masked_rmse(y_true: np.ndarray, y_pred: np.ndarray, null_val: float = 0.0) -> float:
+    """Compute Root Mean Squared Error excluding null_val."""
+    y_true = np.asarray(y_true, dtype=np.float64)
+    y_pred = np.asarray(y_pred, dtype=np.float64)
+    if np.isnan(null_val):
+        mask = ~np.isnan(y_true)
+    else:
+        mask = (~np.isnan(y_true)) & (y_true != null_val)
+    if not np.any(mask):
+        return 0.0
+    return float(np.sqrt(np.mean(np.square(y_true[mask] - y_pred[mask]))))
+
+
+def masked_mape(y_true: np.ndarray, y_pred: np.ndarray, null_val: float = 0.0) -> float:
+    """Compute Mean Absolute Percentage Error (as percentage, e.g. 7.5 for 7.5%) excluding null_val."""
+    y_true = np.asarray(y_true, dtype=np.float64)
+    y_pred = np.asarray(y_pred, dtype=np.float64)
+    if np.isnan(null_val):
+        mask = ~np.isnan(y_true) & (y_true > 0)
+    else:
+        mask = (~np.isnan(y_true)) & (y_true != null_val) & (y_true > 0)
+    if not np.any(mask):
+        return 0.0
+    return float(np.mean(np.abs((y_true[mask] - y_pred[mask]) / y_true[mask])) * 100.0)
+
+
+def compute_metrics(y_true: np.ndarray, y_pred: np.ndarray, null_val: float = 0.0) -> dict[str, float]:
+    """Compute MAE, RMSE, and MAPE."""
+    return {
+        "mae": round(masked_mae(y_true, y_pred, null_val), 4),
+        "rmse": round(masked_rmse(y_true, y_pred, null_val), 4),
+        "mape": round(masked_mape(y_true, y_pred, null_val), 4),
+    }
