@@ -88,7 +88,8 @@ def compute_corridor_statistics(df_sensors: pd.DataFrame) -> pd.DataFrame:
         std_free_speed=("valid_std", "mean"),
         mean_morning_speed=("morning_peak_speed", "mean"),
         mean_evening_speed=("evening_peak_speed", "mean"),
-        zero_fraction=("zero_pct", "mean"),
+        mean_zero_readings=("zero_count", "mean"),
+        mean_valid_fraction=("valid_fraction", "mean"),
     ).reset_index()
 
     agg["morning_speed_drop_pct"] = round(
@@ -225,7 +226,7 @@ def plot_corridor_error_distribution(
         median.set_color("#facc15")
         median.set_linewidth(2)
 
-    ax2.set_title("Sensor Speed Volatility ($\sigma_{speed}$) by Corridor", color="#f8fafc", fontsize=12, fontweight="bold")
+    ax2.set_title(r"Sensor Speed Volatility ($\sigma_{speed}$) by Corridor", color="#f8fafc", fontsize=12, fontweight="bold")
     ax2.set_xlabel("Standard Deviation of Valid Speeds (mph)", color="#cbd5e1", fontsize=10)
     ax2.set_yticklabels([])  # Shared with left plot
     ax2.grid(True, linestyle="--", alpha=0.25, color="#64748b")
