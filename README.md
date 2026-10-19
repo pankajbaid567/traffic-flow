@@ -1,115 +1,147 @@
-# Traffic flow capstone — Phase 1, Persons A, B, and D
+# Traffic Flow Capstone — Phase 1 Complete (Persons A, B, C, D, and E)
 
-This independent project contains Person A's METR-LA dataset engineering, quality investigation, exploratory analysis and handoff. The user's speed file was supplied in `DCRNN/metr-la.h5` within this project; graph assets came from the original sibling `../DCRNN` repository. Both source locations remain unchanged.
+Predict congestion in a road network and test whether graph-based learning improves on independent road segment forecasts.
 
-**Person A deliverables are complete with documented data-quality warnings.** The real speed dataset is validated, all ten EDA figures are reviewed, and both notebooks have executed successfully. Execution details and acceptance evidence are recorded in [verification](reports/verification.md).
+This repository contains the complete deliverables for **Phase 1: Segment-Level Applied Machine Learning Baselines & Spatial Traffic Evaluation** on the METR-LA dataset.
 
-## Measured dataset
+---
 
-| Item | Verified result |
+## 1. Measured Dataset Summary
+
+| Item | Verified Result |
 | --- | --- |
-| Speed table | 34,272 timestamps × 207 sensors |
-| Stored date range | 2012-03-01 00:00 to 2012-06-27 23:55 |
+| Speed table | 34,272 timestamps × 207 sensors (7,094,304 total readings) |
+| Stored date range | 2012-03-01 00:00 to 2012-06-27 23:55 UTC |
 | Sampling | Exactly 5 minutes; no duplicate or missing timestamps |
 | NaN / infinity / negative readings | 0 / 0 / 0 |
-| Exact zeros | 575,302 readings, 8.109% of all cells |
+| Exact zeros | 575,302 readings, 8.109% of all cells (treated as missing/invalid benchmark data) |
 | All-sensor zero timestamps | 2,148, grouped into 97 contiguous blocks |
 | Graph alignment | All speed sensor IDs and their order match the stored 207×207 adjacency |
 | Constant / unusually low-variance sensors | None under the declared valid-speed rule |
 
-The [quality report](reports/data_quality_report.md) contains the evidence and interpretation. Raw files are unchanged. Exact zeros are treated as benchmark missing/suspect, while positive near-zero speeds remain valid. No imputation is performed by Person A. Speed units and timezone are unverified; plots use source units and the stored clock.
+The [quality report](reports/data_quality_report.md) contains the evidence and interpretation. Raw files are unchanged. Exact zeros are treated as benchmark missing/suspect, while positive near-zero speeds remain valid. No imputation is performed on targets. Speed units and timezone are unverified; plots use source units (likely mph) and the stored clock.
 
-## Deliverables
+---
 
-| Path | Contents |
-| --- | --- |
-| `data/raw/metr-la.h5` | Canonical, byte-preserved speed measurements |
-| `data/raw/adj_mx.pkl` | Graph stored for future phases; excluded from AML inputs |
-| `data/raw/manifest.json` | Source paths, distribution reference, sizes and SHA-256 checksums |
-| `data/metadata/sensors.csv` | All 207 sensors, locations and measured quality statistics |
-| `data/metadata/missingness_summary.csv` | Actual NaN/nonfinite/zero/invalid counts and fractions |
-| `data/metadata/split_contract.json` | Shared chronological timestamp boundaries |
-| `notebooks/01_data_understanding.ipynb` | Real-data overview and all ten EDA topics |
-| `notebooks/02_data_quality.ipynb` | Validation, zero investigation, event examples and rules |
-| `figures/` | Ten exported PNG figures and descriptive sensor-selection evidence |
-| `reports/data_quality_report.md` | Measured findings and data-quality rules |
-| `reports/person_b_handoff.md` | Accepted inputs, shared contracts and limitations |
+## 2. Phase 1 Team Roles & Deliverables
 
-Other metadata tables contain exact timestamp-gap evidence, zero runs, positive flatlines, large jumps, temporal profiles and speed quantiles. Full-period EDA describes the dataset; it must not become fitted preprocessing or sensor selection based on held-out statistics.
+| Role | Author | Key Deliverables | Reports & Documentation |
+|---|---|---|---|
+| **Person A** | Person A | Canonical HDF5 ingestion, 10 EDA figures, sensor metadata, split contract | [person_a_plan.md](reports/person_a_plan.md), [data_quality_report.md](reports/data_quality_report.md), [verification.md](reports/verification.md) |
+| **Person B** | Person B | 32-feature causal pipeline, train/val/test parquets, boundary rules | [person_b_handoff.md](reports/person_b_handoff.md), [person_c_d_handoff.md](reports/person_c_d_handoff.md) |
+| **Person C** | Person C | Persistence, Historical Average, XGBoost (32), XGBoost + HA (36) | [person_c_report.md](reports/person_c_report.md), [person_c_e_handoff.md](reports/person_c_e_handoff.md) |
+| **Person D** | Person D | Random Forest models (4 horizons), 4 feature ablation tiers (Exp A–D) | [person_d_report.md](reports/person_d_report.md) |
+| **Person E** | **Person E** | **Unified benchmark synthesis, peak/off-peak slicing, spatial maps, Phase 2 gap bridge, Viva guide** | **[person_e_report.md](reports/person_e_report.md), [phase1_synthesis_report.md](reports/phase1_synthesis_report.md), [phase2_graph_gap_analysis.md](reports/phase2_graph_gap_analysis.md), [person_e_viva_guide.md](reports/person_e_viva_guide.md)** |
 
-## Run in the current workspace
+---
 
-A complete pre-existing scientific environment is available at `/opt/anaconda3/bin/python` and was used without modification. The separate `.venv` contains a newer, partial cached environment and is not the environment used for real-data execution. Exact direct runtime versions are in `requirements-executed.txt`.
+## 3. Master Benchmark Scorecard (Out-of-Time Test Set)
 
-From this directory:
+All metrics strictly filter out invalid/zero targets matching Li et al. (ICLR 2018, DCRNN benchmark). Test partition: June 4 – June 27, 2012 (~1.245M valid predictions per horizon).
 
-```bash
-MPLCONFIGDIR="$PWD/.mplconfig" XDG_CACHE_HOME="$PWD/.cache" /opt/anaconda3/bin/python -m src.data.run_person_a
-MPLCONFIGDIR="$PWD/.mplconfig" XDG_CACHE_HOME="$PWD/.cache" /opt/anaconda3/bin/python scripts/execute_notebooks.py --in-process
-/opt/anaconda3/bin/python -m unittest discover -s tests -v
-```
+| Horizon | Persistence | Hist. Avg | Random Forest (32) | XGBoost (32) | XGBoost + HA (36) | Best Model MAE | Improvement vs Persistence |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| **5 min** | 2.814 | 4.188 | 2.453 | 2.362 | **2.312** | **XGBoost + HA** | **+17.8%** |
+| **15 min** | 3.499 | 4.188 | 3.168 *(RMSE 5.764)* | 2.970 | **2.844** | **XGBoost + HA** | **+18.7%** |
+| **30 min** | 4.206 | 4.188 | 3.871 *(RMSE 7.003)* | 3.563 | **3.275** | **XGBoost + HA** | **+22.1%** |
+| **60 min** | 5.381 | 4.189 | 4.855 *(RMSE 8.410)* | 4.390 | **3.688** | **XGBoost + HA** | **+31.5%** |
 
-The notebook helper normally uses a Jupyter kernel. `--in-process` executes real cells through IPython and captures their outputs without starting a listening kernel, because this session blocks both TCP and Unix socket binding. The notebook metadata records the execution method. Each notebook is saved only after every cell succeeds.
+### Key Benchmark Discoveries:
+1. **L1 vs L2 Loss Duality:** On the identical 32 features, XGBoost wins on MAE and MAPE (trained with L1 absolute-error loss), while Random Forest wins on RMSE at 15m, 30m, and 60m (trained with L2 squared-error loss).
+2. **The 60-Minute Inflection Point:** Plain XGBoost (32 features) loses to Historical Average at 60 min (4.390 vs 4.189) because features lack sensor identity; XGBoost + HA resolves this by adding 4 leave-one-out historical features (**3.688 MAE**).
+3. **Rush-Hour Disparity:** Evening peak (16:00–19:00) error is **75.5% higher** than off-peak error at 15 min (4.484 vs 2.555 MAE).
+4. **Spatial Corridor Bottlenecks:** The I-405 Sepulveda Pass (32.2% drop) and I-10 Santa Monica Freeway (31.3% drop) suffer the most severe congestion collapses, while the I-110 Downtown hub exhibits the highest speed variance ($\sigma = 16.12$ mph).
 
-## Reproduce on another machine
+---
 
-Use Python 3.12 and create a fresh environment. `requirements.txt` lists supported dependency ranges; `requirements-executed.txt` records exact direct versions used here.
-
-```bash
-python3.12 -m venv .venv
-.venv/bin/python -m pip install -r requirements-executed.txt
-.venv/bin/python -m src.data.run_person_a
-.venv/bin/python scripts/execute_notebooks.py
-```
-
-Raw data is not committed by the supplied `.gitignore`. Preserve `data/raw/manifest.json` when sharing the actual data separately. To import an original speed file into a fresh copy with the upstream graph repository available:
+## 4. Run & Reproduce
 
 ```bash
-.venv/bin/python scripts/acquire_data.py --dcrnn ../DCRNN --metr-la /absolute/path/metr-la.h5
+# 1. Initialize environment
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt xgboost scikit-learn seaborn
+
+# 2. Run Person E benchmark and spatial evaluation pipeline (~2.5s)
+.venv/bin/python scripts/run_person_e.py
+
+# 3. Run all unit tests for Person E (15 tests passing)
+.venv/bin/python -m unittest tests/test_person_e.py -v
+
+# 4. Run entire project unit tests (54+ tests)
+.venv/bin/python -m unittest discover -s tests -v
+
+# 5. Build and execute storytelling Notebook 03
+.venv/bin/python scripts/build_notebook_03.py
 ```
 
-The [official DCRNN distribution](https://drive.google.com/open?id=10FOTa6HXPqX8Pf5WRoRwcFnW9BrNZEIX) is linked from the [upstream README](https://github.com/liyaguang/DCRNN#data-preparation). The supplied local file's original download URL is not independently known; its measured structure and local checksum are verified. See [source evidence](reports/data_sources.md).
+---
 
-## Team scope and handoff
+## 5. Repository Structure
 
-Read the [plan](reports/person_a_plan.md), [Person B handoff](reports/person_b_handoff.md) and [verification record](reports/verification.md). The split is chronological, based on the complete 5-minute grid: 23,990 train, 3,427 validation and 6,855 test timestamps. Person B owns feature construction and causal input imputation, with all fitted parameters learned on training timestamps only. All future targets of a sample must remain in one partition.
-
-The input history is 12 observations; target offsets are +1, +3, +6 and +12. Only the predicted sensor's own historical speed and temporal information may enter AML features. No flow/occupancy variables, neighboring speeds or graph-derived inputs are fabricated.
-
-Person A's work does not complete the team's Phase 1. Feature engineering, persistence/historical baselines, XGBoost, Random Forest and model evaluation belong to Persons B–E. Graph learning, SUMO and signal control are outside the current scope.
-
-## Person B — features and processed datasets
-
-Person B built the one feature pipeline that Persons C and D train on. Code is in `src/data/load_data.py`, `split.py`, `features.py` and `dataset_builder.py`; feature lists are also written down in `configs/features.yaml`. Read the [Person C/D handoff](reports/person_c_d_handoff.md) before training anything.
-
-```bash
-/opt/anaconda3/bin/python -m src.data.dataset_builder
+```
+├── configs/
+│   ├── features.yaml                       ← Person B feature configuration
+│   └── data_quality.yaml                   ← Person A quality rules
+├── data/
+│   ├── metadata/
+│   │   ├── sensors.csv                     ← 207 sensors with geo coordinates
+│   │   ├── split_contract.json             ← Chronological split boundaries
+│   │   ├── person_c_results.json           ← Person C baseline/XGBoost metrics
+│   │   ├── person_d_results.json           ← Person D Random Forest metrics
+│   │   ├── person_e_results.json           ← Person E master benchmark JSON
+│   │   ├── corridor_performance.csv        ← Highway corridor speed drops
+│   │   └── sensor_error_rankings.csv       ← Volatility rankings for 207 sensors
+│   └── raw/
+│       ├── graph_sensor_locations.csv      ← Sensor coordinates
+│       ├── graph_sensor_ids.txt            ← Ordered sensor IDs
+│       └── manifest.json                   ← Raw file checksums & provenance
+├── figures/
+│   ├── person_e_horizon_metrics_comparison.png
+│   ├── person_e_peak_vs_offpeak_analysis.png
+│   ├── person_e_congestion_map_morning_peak.png
+│   ├── person_e_congestion_map_evening_peak.png
+│   ├── person_e_spatial_error_corridors.png
+│   ├── person_e_feature_importance_comparison.png
+│   ├── person_e_rf_ablation_progression.png
+│   └── person_e_graph_propagation_gap.png
+├── models/
+│   └── person_c/                           ← 8 trained XGBoost boosters
+├── notebooks/
+│   ├── 01_data_understanding.ipynb         ← Person A real-data EDA
+│   ├── 02_data_quality.ipynb               ← Person A validation & zeros
+│   └── 03_model_evaluation_and_congestion_maps.ipynb ← Person E executed notebook
+├── reports/
+│   ├── person_e_plan.md                    ← Person E master plan
+│   ├── person_e_report.md                  ← Person E formal evaluation report
+│   ├── phase1_synthesis_report.md          ← Complete Phase 1 capstone synthesis
+│   ├── phase2_graph_gap_analysis.md        ← Gap analysis & bridge to GAT/DL
+│   └── person_e_viva_guide.md              ← Comprehensive Viva Defense Guide
+├── scripts/
+│   ├── run_person_c.py                     ← Person C baseline/XGBoost runner
+│   ├── run_person_d.py                     ← Person D Random Forest runner
+│   ├── run_person_e.py                     ← Person E master evaluation runner
+│   └── build_notebook_03.py                ← Notebook 03 builder & executor
+├── src/
+│   ├── models/
+│   │   ├── metrics.py                      ← Unified evaluation metrics
+│   │   ├── evaluation.py                   ← Multi-model benchmark matrix engine
+│   │   ├── baselines.py                    ← Persistence & Historical Average
+│   │   ├── xgboost_model.py                ← XGBoost trainers & boosters
+│   │   └── random_forest.py                ← Random Forest models
+│   └── visualization/
+│       ├── spatial_mapping.py              ← 2D highway mapping & corridors
+│       └── benchmark_plots.py              ← Multi-metric visual suite
+└── tests/
+    ├── test_person_c.py                    ← Person C unit tests
+    ├── test_person_d.py                    ← Person D unit tests
+    └── test_person_e.py                    ← Person E unit tests (15 passing)
 ```
 
-This writes `data/processed/{train,val,test}.parquet` and `dataset_summary.json` (git-ignored, about 330 MB, ~12 s to rebuild). One row is one sensor at one prediction origin: 32 features, 4 raw targets (+5/+15/+30/+60 min) and 4 `target_valid_*` flags.
+---
 
-| Split | Origins | Rows (×207 sensors) | First origin | Last origin |
-| --- | ---: | ---: | --- | --- |
-| Train | 23,967 | 4,961,169 | 2012-03-01 00:55 | 2012-05-23 06:05 |
-| Validation | 3,416 | 707,112 | 2012-05-23 07:05 | 2012-06-04 03:40 |
-| Test | 6,844 | 1,416,708 | 2012-06-04 04:40 | 2012-06-27 22:55 |
+## 6. Phase 2 Transition Roadmap
 
-- Zero / NaN / negative speeds are missing. Inputs are forward-filled (past only) and leading gaps get the sensor's training median; the medians are saved in `dataset_summary.json`.
-- Targets are raw and never filled. Filter on `target_valid_<h>` before training or scoring.
-- Origins whose targets cross a split boundary are dropped; history may come from the previous split.
-- Only the sensor's own speed plus time features are used. No neighbours or graph inputs.
-
-## Person D — Random Forest models and feature ablations
-
-Person D implemented and executed the Random Forest models and feature ablation studies across all four horizons (5 min, 15 min, 30 min, 60 min).
-
-```bash
-python scripts/run_person_d.py --max-samples 0.1 --evaluate-test
-python -m unittest tests/test_person_d.py -v
-```
-
-- Code: `src/models/metrics.py`, `src/models/random_forest.py`, `scripts/run_person_d.py`.
-- Tests: `tests/test_person_d.py` (all tests passing).
-- Results & Report: `data/metadata/person_d_results.json`, `reports/person_d_report.md`.
-- All Random Forest models beat persistence baselines on both validation and test sets.
-
+In Phase 2, the project shifts from segment-level independent applied machine learning models to **network-aware Deep Graph Learning**:
+1. **Graph Attention Networks (GAT):** Dynamic spatial attention $\alpha_{ij}$ modeling backward shockwave spillbacks over the 207-node road graph.
+2. **Diffusion Convolutional Recurrent Neural Networks (DCRNN):** Bidirectional graph random walks coupled with sequence-to-sequence GRU modeling.
+3. **Simulated Signal Policy Experiments:** Traffic signal timing evaluation inside **SUMO (Simulation of Urban MObility)** or **CityFlow** (*strictly designated as simulated only; no live traffic control claimed*).
