@@ -2,7 +2,7 @@
 
 **Role:** Person E (Lead Evaluator, Benchmark Synthesizer, Congestion Spatial Analyst & Phase 1 Integration Lead)  
 **Project:** Traffic Flow Prediction and Signal Control via Graph Attention Networks and Flow Models  
-**Workspace:** `AML&DL_Project`  
+**Repository:** `traffic-flow`  
 **Date:** 2026-10-19  
 
 ---

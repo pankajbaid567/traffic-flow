@@ -104,11 +104,11 @@ def run_person_e_pipeline(save_figures: bool = True) -> dict[str, Any]:
 
     corridor_csv = metadata_dir / "corridor_performance.csv"
     corridor_stats.to_csv(corridor_csv, index=False)
-    print(f"  ✓ Saved {corridor_csv}")
+    print(f"  ✓ Saved {corridor_csv.relative_to(ROOT)}")
 
     sensor_ranks_csv = metadata_dir / "sensor_error_rankings.csv"
     df_sensor_ranks.to_csv(sensor_ranks_csv, index=False)
-    print(f"  ✓ Saved {sensor_ranks_csv}")
+    print(f"  ✓ Saved {sensor_ranks_csv.relative_to(ROOT)}")
 
     # Build comprehensive Person E results JSON
     e_results = {
@@ -131,7 +131,7 @@ def run_person_e_pipeline(save_figures: bool = True) -> dict[str, Any]:
     results_json = metadata_dir / "person_e_results.json"
     with open(results_json, "w", encoding="utf-8") as f:
         json.dump(e_results, f, indent=2)
-    print(f"  ✓ Saved {results_json}")
+    print(f"  ✓ Saved {results_json.relative_to(ROOT)}")
 
     # 6. Render figures
     if save_figures:

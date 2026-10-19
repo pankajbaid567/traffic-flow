@@ -138,7 +138,7 @@ Real-world traffic signal preemption involves public safety, multi-agency jurisd
 ## 3. Person E Deliverables & File Directory Map
 
 ```
-/Users/ranvendrapratapsingh/Documents/AML&DL_Project/
+traffic-flow/
 ├── reports/
 │   ├── person_e_plan.md                     ← Person E master plan & scope
 │   ├── person_e_report.md                   ← Formal evaluation & benchmark report
