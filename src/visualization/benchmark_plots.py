@@ -226,7 +226,7 @@ def plot_rf_ablation_progression(
 
     # Plot persistence baseline as reference
     pers_mae = [d_data["experiments"]["A"][h]["test_persistence_mae"] for h in horizons]
-    ax.plot(x, pers_mae, "k--", marker="x", label="Persistence Baseline", color="#94a3b8", linewidth=1.8)
+    ax.plot(x, pers_mae, linestyle="--", marker="x", label="Persistence Baseline", color="#94a3b8", linewidth=1.8)
 
     for code in ["A", "B", "C", "D"]:
         maes = [d_data["experiments"][code][h]["test_metrics"]["mae"] for h in horizons]
