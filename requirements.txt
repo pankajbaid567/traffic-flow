@@ -10,3 +10,10 @@ ipykernel>=6.28,<8
 
 # Person B (parquet datasets)
 pyarrow>=15,<20
+
+# Persons C-E and report generation
+scikit-learn>=1.4,<2
+xgboost>=3.1,<4
+numba>=0.59,<1
+reportlab>=4,<6
+pdfplumber>=0.11,<1

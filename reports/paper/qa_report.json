@@ -1,0 +1,57 @@
+{
+  "reviewed_at_utc": "2026-10-21T09:23:39.312905+00:00",
+  "pdf_sha256": "47d7dcf4bda28e388a5568f143931f5661b8e79e61ff13075021c8019396c800",
+  "page_count": 4,
+  "page_size": "US Letter 612 x 792 pt",
+  "visually_inspected_pages": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "visual_review": "All four final page PNGs inspected after the author update; all five names fit in two centered lines, with legible tables, equations, figures, captions and references and no clipping or overlap.",
+  "embedded_fonts": {
+    "AAAAAA+TimesNewRomanPSMT": {
+      "embedded_bytes": 58648,
+      "format": "ttf"
+    },
+    "AAAAAA+TimesNewRomanPS-BoldItalicMT": {
+      "embedded_bytes": 47076,
+      "format": "ttf"
+    },
+    "AAAAAA+TimesNewRomanPS-BoldMT": {
+      "embedded_bytes": 50236,
+      "format": "ttf"
+    },
+    "AAAAAA+TimesNewRomanPS-ItalicMT": {
+      "embedded_bytes": 48884,
+      "format": "ttf"
+    },
+    "AAAAAA+STIXGeneral-Regular": {
+      "embedded_bytes": 21320,
+      "format": "ttf"
+    },
+    "AAAAAA+STIXGeneral-Italic": {
+      "embedded_bytes": 21788,
+      "format": "ttf"
+    },
+    "AAAAAA+STIXSizeThreeSym-Regular": {
+      "embedded_bytes": 11660,
+      "format": "ttf"
+    }
+  },
+  "text_bounds_check": "passed",
+  "missing_glyph_check": "passed",
+  "software_tests": 82,
+  "acceptance_checks": 311,
+  "author_metadata": {
+    "names": [
+      "Pankaj Baid",
+      "Ashutosh Singh",
+      "Shreya Suman",
+      "Narendra Singh",
+      "Ranvendra Pratap Singh"
+    ],
+    "affiliation": "Not supplied; left blank"
+  }
+}

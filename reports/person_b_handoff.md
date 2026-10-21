@@ -1,3 +1,5 @@
+> Historical Person A delivery record from October 16. For the integrated Phase 1 completion and current results, see [the completion audit](phase1_completion_verification.md) and [the verified evaluation](person_e_report.md).
+
 # Person A → Person B handoff
 
 **Handoff status: real speed data validated with documented quality warnings.** The supplied `DCRNN/metr-la.h5` has been copied unchanged to `data/raw/metr-la.h5`, with SHA-256 `64784b76d6fb8ec9bff4b6decafb354da2bb37840468fdccee5044e511277c05`. It contains 34,272 ordered, unique 5-minute timestamps and 207 sensors, spanning 2012-03-01 00:00 to 2012-06-27 23:55. No timestamps are missing. Speed sensor IDs and their order match the graph exactly. All ten EDA figures are available; notebook execution is recorded in `verification.md`.

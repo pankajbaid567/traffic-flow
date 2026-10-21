@@ -1,0 +1,61 @@
+{
+  "method": "direct scalar JSON walk, compiled numeric reader, and official XGBoost when available",
+  "checks": [
+    {
+      "model": "xgb_5min.json",
+      "validation_rows": 96,
+      "maximum_absolute_difference": 0.0,
+      "official_runtime_version": "3.4.1",
+      "official_runtime_maximum_absolute_difference": 0.0
+    },
+    {
+      "model": "xgb_ha_5min.json",
+      "validation_rows": 96,
+      "maximum_absolute_difference": 0.0,
+      "official_runtime_version": "3.4.1",
+      "official_runtime_maximum_absolute_difference": 0.0
+    },
+    {
+      "model": "xgb_15min.json",
+      "validation_rows": 96,
+      "maximum_absolute_difference": 0.0,
+      "official_runtime_version": "3.4.1",
+      "official_runtime_maximum_absolute_difference": 0.0
+    },
+    {
+      "model": "xgb_ha_15min.json",
+      "validation_rows": 96,
+      "maximum_absolute_difference": 0.0,
+      "official_runtime_version": "3.4.1",
+      "official_runtime_maximum_absolute_difference": 0.0
+    },
+    {
+      "model": "xgb_30min.json",
+      "validation_rows": 96,
+      "maximum_absolute_difference": 0.0,
+      "official_runtime_version": "3.4.1",
+      "official_runtime_maximum_absolute_difference": 0.0
+    },
+    {
+      "model": "xgb_ha_30min.json",
+      "validation_rows": 96,
+      "maximum_absolute_difference": 0.0,
+      "official_runtime_version": "3.4.1",
+      "official_runtime_maximum_absolute_difference": 0.0
+    },
+    {
+      "model": "xgb_60min.json",
+      "validation_rows": 96,
+      "maximum_absolute_difference": 0.0,
+      "official_runtime_version": "3.4.1",
+      "official_runtime_maximum_absolute_difference": 0.0
+    },
+    {
+      "model": "xgb_ha_60min.json",
+      "validation_rows": 96,
+      "maximum_absolute_difference": 0.0,
+      "official_runtime_version": "3.4.1",
+      "official_runtime_maximum_absolute_difference": 0.0
+    }
+  ]
+}

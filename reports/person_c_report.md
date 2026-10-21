@@ -1,9 +1,9 @@
 # Person C — Baselines and XGBoost
 
-**Generated:** 2026-10-17 12:38 UTC  
+**Generated:** 2026-10-21 09:22 UTC
 **Scope:** persistence, historical average and two XGBoost variants, one model per horizon, own-sensor features only (no neighbours, no graph).
 
-Speeds are in source units (likely mph, unverified). Every score uses valid targets only (`target_valid_<h> == True`). Fitted on train, early-stopped on validation; test was scored once at the end.
+Speeds are in source units (likely mph, unverified). Every score uses valid targets only (`target_valid_<h> == True`). Fitted on train and early-stopped on validation. Completion regenerates predictions from the frozen boosters without test-based tuning.
 
 ## Models
 
@@ -26,11 +26,11 @@ Speeds are in source units (likely mph, unverified). Every score uses valid targ
 | 15min | **XGBoost + hist. avg features** | 2.844 | 5.540 | 7.63 |
 | 30min | persistence | 4.206 | 8.052 | 10.86 |
 | 30min | historical average | 4.188 | 7.855 | 13.04 |
-| 30min | XGBoost (32 shared features) | 3.563 | 7.127 | 10.27 |
+| 30min | XGBoost (32 shared features) | 3.564 | 7.129 | 10.27 |
 | 30min | **XGBoost + hist. avg features** | 3.275 | 6.546 | 9.49 |
 | 60min | persistence | 5.380 | 10.344 | 14.53 |
 | 60min | historical average | 4.189 | 7.855 | 13.04 |
-| 60min | XGBoost (32 shared features) | 4.390 | 8.714 | 13.72 |
+| 60min | XGBoost (32 shared features) | 4.393 | 8.720 | 13.74 |
 | 60min | **XGBoost + hist. avg features** | 3.688 | 7.470 | 11.34 |
 
 ## Validation results (MAE)
@@ -38,9 +38,9 @@ Speeds are in source units (likely mph, unverified). Every score uses valid targ
 | Horizon | Persistence | Hist. avg | XGBoost (32) | XGBoost + HA | XGBoost + HA RMSE | XGBoost + HA MAPE % | Gain vs persistence |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | 5min | 2.630 | 4.333 | 2.189 | **2.158** | 3.836 | 5.16 | 17.9% |
-| 15min | 3.225 | 4.332 | 2.722 | **2.639** | 5.241 | 7.00 | 18.2% |
-| 30min | 3.830 | 4.329 | 3.234 | **3.046** | 6.222 | 8.75 | 20.5% |
-| 60min | 4.806 | 4.320 | 3.920 | **3.461** | 7.141 | 10.44 | 28.0% |
+| 15min | 3.225 | 4.332 | 2.723 | **2.639** | 5.241 | 7.00 | 18.2% |
+| 30min | 3.830 | 4.329 | 3.234 | **3.047** | 6.222 | 8.75 | 20.5% |
+| 60min | 4.806 | 4.320 | 3.921 | **3.461** | 7.141 | 10.44 | 28.0% |
 
 ## Peak vs off-peak (test)
 
@@ -49,25 +49,25 @@ Peak = weekday 07:00–10:00 or 16:00–19:00 at the **origin** time (Person B's
 | Horizon | Period | Rows | Persistence MAE | Hist. avg MAE | XGBoost (32) MAE | XGBoost + HA MAE | XGBoost + HA RMSE | XGBoost + HA MAPE % |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
 | 5min | all | 1,245,052 | 2.814 | 4.188 | 2.362 | **2.312** | 4.065 | 5.66 |
-| 5min | peak | 250,366 | 3.293 | 6.566 | 2.978 | **2.929** | 5.090 | 9.25 |
+| 5min | peak | 250,366 | 3.293 | 6.567 | 2.978 | **2.929** | 5.090 | 9.25 |
 | 5min | off_peak | 994,686 | 2.693 | 3.590 | 2.207 | **2.157** | 3.764 | 4.76 |
 | 5min | morning_peak | 121,561 | 2.868 | 5.715 | 2.587 | **2.526** | 4.515 | 7.31 |
-| 5min | evening_peak | 128,805 | 3.695 | 7.370 | 3.348 | **3.308** | 5.579 | 11.07 |
+| 5min | evening_peak | 128,805 | 3.695 | 7.370 | 3.348 | **3.309** | 5.578 | 11.07 |
 | 15min | all | 1,245,040 | 3.499 | 4.188 | 2.970 | **2.844** | 5.540 | 7.63 |
 | 15min | peak | 250,050 | 4.619 | 6.625 | 4.170 | **3.992** | 7.374 | 13.10 |
 | 15min | off_peak | 994,990 | 3.217 | 3.576 | 2.668 | **2.555** | 4.974 | 6.25 |
-| 15min | morning_peak | 121,183 | 4.053 | 5.807 | 3.675 | **3.469** | 6.688 | 10.43 |
+| 15min | morning_peak | 121,183 | 4.053 | 5.807 | 3.676 | **3.469** | 6.688 | 10.43 |
 | 15min | evening_peak | 128,867 | 5.152 | 7.394 | 4.636 | **4.484** | 7.965 | 15.62 |
-| 30min | all | 1,245,022 | 4.206 | 4.188 | 3.563 | **3.275** | 6.546 | 9.49 |
-| 30min | peak | 249,616 | 5.987 | 6.649 | 5.303 | **4.862** | 8.895 | 16.50 |
-| 30min | off_peak | 995,406 | 3.760 | 3.571 | 3.127 | **2.877** | 5.810 | 7.73 |
-| 30min | morning_peak | 120,641 | 5.294 | 5.879 | 4.746 | **4.273** | 8.174 | 13.30 |
+| 30min | all | 1,245,022 | 4.206 | 4.188 | 3.564 | **3.275** | 6.546 | 9.49 |
+| 30min | peak | 249,616 | 5.987 | 6.649 | 5.304 | **4.863** | 8.896 | 16.51 |
+| 30min | off_peak | 995,406 | 3.760 | 3.571 | 3.128 | **2.877** | 5.810 | 7.73 |
+| 30min | morning_peak | 120,641 | 5.294 | 5.879 | 4.747 | **4.273** | 8.176 | 13.30 |
 | 30min | evening_peak | 128,975 | 6.636 | 7.370 | 5.825 | **5.414** | 9.520 | 19.50 |
-| 60min | all | 1,244,986 | 5.380 | 4.189 | 4.390 | **3.688** | 7.470 | 11.34 |
-| 60min | peak | 250,056 | 8.144 | 6.500 | 6.563 | **5.562** | 10.125 | 19.36 |
-| 60min | off_peak | 994,930 | 4.686 | 3.608 | 3.844 | **3.216** | 6.637 | 9.33 |
-| 60min | morning_peak | 120,732 | 6.898 | 5.845 | 5.870 | **4.949** | 9.381 | 15.54 |
-| 60min | evening_peak | 129,324 | 9.308 | 7.112 | 7.210 | **6.135** | 10.774 | 22.92 |
+| 60min | all | 1,244,986 | 5.380 | 4.189 | 4.393 | **3.688** | 7.470 | 11.34 |
+| 60min | peak | 250,056 | 8.144 | 6.500 | 6.565 | **5.563** | 10.125 | 19.36 |
+| 60min | off_peak | 994,930 | 4.686 | 3.608 | 3.848 | **3.217** | 6.637 | 9.33 |
+| 60min | morning_peak | 120,732 | 6.898 | 5.845 | 5.872 | **4.949** | 9.381 | 15.54 |
+| 60min | evening_peak | 129,324 | 9.308 | 7.112 | 7.211 | **6.135** | 10.773 | 22.92 |
 
 ## Against Person D's Random Forest (test, full 32 features)
 
@@ -75,21 +75,23 @@ Person D's numbers are read from `data/metadata/person_d_results.json` and not m
 
 | Horizon | RF MAE | XGBoost (32) MAE | XGBoost + HA MAE | RF RMSE | XGBoost (32) RMSE | XGBoost + HA RMSE | RF MAPE % | XGBoost + HA MAPE % |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| 5min | 2.453 | 2.362 | **2.312** | 4.156 | 4.151 | 4.065 | 6.03 | 5.66 |
-| 15min | 3.168 | 2.970 | **2.844** | 5.764 | 5.806 | 5.540 | 8.56 | 7.63 |
-| 30min | 3.871 | 3.563 | **3.275** | 7.003 | 7.127 | 6.546 | 11.10 | 9.49 |
-| 60min | 4.855 | 4.390 | **3.688** | 8.410 | 8.714 | 7.470 | 14.48 | 11.34 |
+| 5min | 2.452 | 2.362 | **2.312** | 4.156 | 4.151 | 4.065 | 6.02 | 5.66 |
+| 15min | 3.167 | 2.970 | **2.844** | 5.763 | 5.806 | 5.540 | 8.56 | 7.63 |
+| 30min | 3.871 | 3.564 | **3.275** | 7.002 | 7.129 | 6.546 | 11.10 | 9.49 |
+| 60min | 4.854 | 4.393 | **3.688** | 8.410 | 8.720 | 7.470 | 14.48 | 11.34 |
 
 The like-for-like comparison is the RF against **XGBoost (32)**: same inputs. XGBoost + HA also uses the extra history features, so its lead over RF mixes a model effect and a feature effect.
 
 ## What the results say
 
-- **XGBoost on the 32 shared features does not beat the historical average on test at 60min** (it does on validation). Those features carry no sensor identity, so the model cannot know a sensor's usual level at the target time, and the test period is more volatile than validation. Persistence MAE at 60 min is 5.38 on test against 4.81 on validation.
+- **XGBoost on the 32 shared features does not beat the historical average on test at 60min** (it does on validation). The shared features do not explicitly supply a sensor's target-time historical profile. The separate HA extension tests the value of that additional local information; this comparison does not establish a causal explanation for every error.
 - Adding the historical-average features fixes this: XGBoost + HA beats every baseline on MAE and RMSE at every horizon on test.
 - On the same 32 features, XGBoost beats Person D's Random Forest on MAE and MAPE at every horizon, but the RF has the lower RMSE at 15min, 30min, 60min. XGBoost is trained on absolute error and RF on squared error, so each favours its own metric.
-- Errors rise sharply in peak periods, and more in the evening than the morning. This is the cost of forecasting from one sensor's own history alone.
+- Errors are higher in the defined peak periods, especially evening origins. This is a descriptive result on the stored clock; no verified physical cause or graph-model advantage is inferred.
 
 ## Model details
+
+Tree counts and fit times below are preserved original training metadata, not the elapsed time of prediction regeneration.
 
 | Horizon | Model | Trees (early stopped) | Fit time (s) | Train rows |
 |---|---|---:|---:|---:|
@@ -104,11 +106,11 @@ The like-for-like comparison is the RF against **XGBoost (32)**: same inputs. XG
 
 Params: `tree_method=hist`, `objective=reg:absoluteerror`, `eval_metric=mae`, `max_depth=8`, `eta=0.1`, `min_child_weight=50`, `subsample=0.8`, `colsample_bytree=0.8`, `seed=42`
 
-### Design choices (decided on validation only)
+### Preserved training design
 
-- **Residual target.** The model predicts `target − speed_lag_0` and the current speed is added back. Slightly better than the raw target.
-- **Absolute-error loss** (`reg:absoluteerror`). MAE is the headline metric. On 15 min validation it gave MAE 2.73 against 2.88 for squared error, but a worse RMSE (5.46 against 5.37). This is the trade-off.
-- **Hyper-parameters barely matter.** Depth 6–12 and min_child_weight 10–100 all landed within 0.003 MAE on validation (15 min, 32 features), so I stopped tuning. What helped was information, not tuning: the history features.
+- **Residual target.** The preserved boosters predict `target − speed_lag_0`; current speed is added back at inference.
+- **Absolute-error loss** (`reg:absoluteerror`) and validation early stopping are recorded in the saved model and fit metadata.
+- Completion re-evaluates frozen models. It does not repeat the original hyperparameter search or use test errors to select new settings.
 - **Leave-one-out history features on train rows.** Without it, a training row's own target sits inside its average and the model over-trusts the feature.
 
 ## Top features (gain, normalised)
@@ -132,7 +134,7 @@ Params: `tree_method=hist`, `objective=reg:absoluteerror`, `eval_metric=mae`, `m
 
 ## Handoff (Person E)
 
-- `data/metadata/person_c_results.json` has every number above.
+- `data/metadata/person_c_results.json` records model-run metrics at four decimals. After common evaluation, displayed headline tables use unrounded `phase1_metrics.csv` scores to avoid double rounding.
 - `data/processed/predictions/person_c_{val,test}_predictions.parquet`: one row per (origin, sensor) with target, validity flag and all four models' predictions per horizon, for maps and plots. Rebuild with `python scripts/run_person_c.py`.
 - `models/person_c/xgb_<h>.json` and `xgb_ha_<h>.json` are the trained boosters. They predict the change; add `speed_lag_0` to get speed.
 - Code: `src/models/baselines.py`, `src/models/xgboost_model.py`, `scripts/run_person_c.py`, `tests/test_person_c.py`.

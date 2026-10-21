@@ -9,6 +9,7 @@ Runs 4 feature ablation experiments:
 Across 4 forecast horizons:
   - 5min, 15min, 30min, 60min
 """
+
 from __future__ import annotations
 
 import argparse
@@ -41,12 +42,12 @@ HORIZONS = ["5min", "15min", "30min", "60min"]
 def generate_markdown_report(results: dict, output_path: Path) -> None:
     """Generate a clean, structured Markdown report of Person D's deliverables."""
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-    
+
     lines = [
         "# Person D — Random Forest Models and Feature Ablation Study",
         "",
-        f"**Date:** {timestamp}  ",
-        "**Author:** Person D  ",
+        f"**Date:** {timestamp}",
+        "**Author:** Person D",
         "**Scope:** Random Forest training, evaluation, and feature ablation across 4 horizons (5m, 15m, 30m, 60m).",
         "",
         "## Executive Summary",
@@ -57,13 +58,13 @@ def generate_markdown_report(results: dict, output_path: Path) -> None:
         "",
         "### Key Findings",
         "",
-        "1. **Persistence Beaten Across All Horizons:** Every Random Forest model significantly outperforms the persistence baseline on both validation and test sets.",
+        "1. The full 32-feature Random Forest is compared with persistence at every horizon. Individual ablations can perform worse than persistence; statistical significance requires a separate paired analysis.",
         "2. **Ablation Progression:** Adding temporal (time of day / day of week / peak hours) and rolling window statistics consistently reduces forecast error, especially at longer horizons (30min and 60min) where immediate lag memory decays.",
         "3. **Efficiency:** Using bootstrap subsampling (`max_samples=0.1`) allowed training across 4.6 million training rows in reasonable runtimes while maintaining high predictive accuracy.",
         "",
         "## Validation Performance Table (MAE / RMSE / MAPE)",
         "",
-        "| Horizon | Persistence MAE | Exp A (lag_only) | Exp B (lag_temporal) | Exp C (lag_rolling) | Exp D (full_features) | Best RF MAE | Improvement over Persistence |",
+        "| Horizon | Persistence MAE | Exp A (lag_only) | Exp B (lag_temporal) | Exp C (lags + time + rolling) | Exp D (full_features) | Best RF MAE | Improvement over Persistence |",
         "|---|---:|---:|---:|---:|---:|---:|---:|",
     ]
 
@@ -80,13 +81,15 @@ def generate_markdown_report(results: dict, output_path: Path) -> None:
             f"| {h} | {persist:.3f} | {mae_a:.3f} | {mae_b:.3f} | {mae_c:.3f} | {mae_d:.3f} | **{best_mae:.3f}** | +{improvement:.3f} ({pct_imp}%) |"
         )
 
-    lines.extend([
-        "",
-        "## Test Set Benchmark (Final Evaluation)",
-        "",
-        "| Horizon | Persistence MAE | Exp A MAE | Exp B MAE | Exp C MAE | Exp D MAE (Full) | Full RF RMSE | Full RF MAPE |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|",
-    ])
+    lines.extend(
+        [
+            "",
+            "## Test Set Benchmark (Final Evaluation)",
+            "",
+            "| Horizon | Persistence MAE | Exp A MAE | Exp B MAE | Exp C MAE | Exp D MAE (Full) | Full RF RMSE | Full RF MAPE |",
+            "|---|---:|---:|---:|---:|---:|---:|---:|",
+        ]
+    )
 
     for h in HORIZONS:
         test_persist = results["experiments"]["A"][h].get("test_persistence_mae", 0.0)
@@ -100,13 +103,15 @@ def generate_markdown_report(results: dict, output_path: Path) -> None:
             f"| {h} | {test_persist:.3f} | {t_a:.3f} | {t_b:.3f} | {t_c:.3f} | **{t_d:.3f}** | {rmse_d:.3f} | {mape_d:.2f}% |"
         )
 
-    lines.extend([
-        "",
-        "## Feature Importance Analysis (Exp D: Full 32 Features)",
-        "",
-        "Top 5 most influential features by Gini importance per horizon:",
-        "",
-    ])
+    lines.extend(
+        [
+            "",
+            "## Feature Importance Analysis (Exp D: Full 32 Features)",
+            "",
+            "Top 5 most influential features by mean decrease in squared-error impurity per horizon:",
+            "",
+        ]
+    )
 
     for h in HORIZONS:
         importances = results["experiments"]["D"][h]["feature_importances"]
@@ -116,14 +121,16 @@ def generate_markdown_report(results: dict, output_path: Path) -> None:
             lines.append(f"- **`{feat}`**: {score:.4f}")
         lines.append("")
 
-    lines.extend([
-        "## Deliverables and Compliance",
-        "",
-        "- Parquet inputs: Loaded via `src.data.dataset_builder.load_partition`.",
-        "- Target masking: Filtered on `target_valid_<h>` before fitting and scoring.",
-        "- No leakage: Fitted exclusively on train partition; tuning evaluated on validation.",
-        "- Machine-readable output saved to `data/metadata/person_d_results.json`.",
-    ])
+    lines.extend(
+        [
+            "## Deliverables and Compliance",
+            "",
+            "- Parquet inputs: Loaded via `src.data.dataset_builder.load_partition`.",
+            "- Target masking: Filtered on `target_valid_<h>` before fitting and scoring.",
+            "- No leakage: Fitted exclusively on train partition; tuning evaluated on validation.",
+            "- Machine-readable output saved to `data/metadata/person_d_results.json`.",
+        ]
+    )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text("\n".join(lines) + "\n")
@@ -138,13 +145,20 @@ def main() -> int:
     parser.add_argument("--max-samples", type=float, default=0.1)
     parser.add_argument("--evaluate-test", action="store_true", default=True)
     parser.add_argument("--save-models", action="store_true", default=False)
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Reuse completed experiment/horizon checkpoints from this run",
+    )
     args = parser.parse_args()
 
     print("=" * 70)
     print("Person D: Random Forest Ablation Pipeline")
     print(f"Horizons: {args.horizons}")
     print(f"Experiments: {args.experiments}")
-    print(f"RF Config: n_estimators={args.n_estimators}, max_depth={args.max_depth}, max_samples={args.max_samples}")
+    print(
+        f"RF Config: n_estimators={args.n_estimators}, max_depth={args.max_depth}, max_samples={args.max_samples}"
+    )
     print(f"Evaluate Test: {args.evaluate_test}")
     print("=" * 70)
 
@@ -156,7 +170,10 @@ def main() -> int:
     val_df = load_partition("val")
     test_df = load_partition("test") if args.evaluate_test else None
     print(f"Datasets loaded in {time.time() - t0:.1f}s")
-    print(f"Train: {train_df.shape}, Val: {val_df.shape}" + (f", Test: {test_df.shape}" if test_df is not None else ""))
+    print(
+        f"Train: {train_df.shape}, Val: {val_df.shape}"
+        + (f", Test: {test_df.shape}" if test_df is not None else "")
+    )
 
     results: dict = {
         "metadata": {
@@ -165,6 +182,9 @@ def main() -> int:
             "max_depth": args.max_depth,
             "max_samples": args.max_samples,
             "random_state": 42,
+            "training_parquet_sha256": json.loads(
+                (ROOT / "data/processed/dataset_summary.json").read_text()
+            )["partitions"]["train"]["file_sha256"],
         },
         "experiments": {},
     }
@@ -173,15 +193,34 @@ def main() -> int:
     if args.save_models:
         models_dir.mkdir(parents=True, exist_ok=True)
 
+    checkpoint = ROOT / "data/processed/person_d_training_checkpoint.json"
+    if args.resume and checkpoint.exists():
+        prior = json.loads(checkpoint.read_text())
+        if prior["metadata"] != {
+            **results["metadata"],
+            "timestamp_utc": prior["metadata"]["timestamp_utc"],
+        }:
+            raise ValueError(
+                "Checkpoint training parameters differ from requested parameters"
+            )
+        results = prior
+
     for exp_id, group_key, desc in EXPERIMENTS:
         if exp_id not in args.experiments:
             continue
         feats = feature_groups[group_key]
         print(f"\n>>> Running Exp {exp_id}: {group_key} ({len(feats)} features)")
         print(f"    Description: {desc}")
-        results["experiments"][exp_id] = {}
+        results["experiments"].setdefault(exp_id, {})
 
         for h in args.horizons:
+            if (
+                args.resume
+                and h in results["experiments"][exp_id]
+                and (models_dir / f"rf_exp_{exp_id}_{h}.joblib").exists()
+            ):
+                print(f"    Reusing completed checkpoint: {exp_id} {h}", flush=True)
+                continue
             print(f"    Horizon {h:5s} ... ", end="", flush=True)
             res, model = train_and_evaluate(
                 train_df=train_df,
@@ -199,11 +238,14 @@ def main() -> int:
             val_mae = res["val_metrics"]["mae"]
             persist_mae = res["val_persistence_mae"]
             fit_time = res["fit_time_seconds"]
-            print(f"fit={fit_time:.1f}s | Val MAE={val_mae:.3f} (Persist: {persist_mae:.3f}) | Δ={persist_mae - val_mae:+.3f}")
+            print(
+                f"fit={fit_time:.1f}s | Val MAE={val_mae:.3f} (Persist: {persist_mae:.3f}) | Δ={persist_mae - val_mae:+.3f}"
+            )
 
             if args.save_models:
                 model_file = models_dir / f"rf_exp_{exp_id}_{h}.joblib"
-                joblib.dump(model, model_file)
+                joblib.dump(model, model_file, compress=3)
+            checkpoint.write_text(json.dumps(results, indent=2, allow_nan=False))
 
     # Save summary JSON
     json_path = ROOT / "data/metadata/person_d_results.json"

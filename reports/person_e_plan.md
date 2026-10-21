@@ -1,3 +1,5 @@
+> Planning record. The completed implementation and verified results are in [person_e_report.md](person_e_report.md). Named freeway tags were not available; the completed spatial evaluation uses explicitly labelled coordinate regions, measured prediction errors and observed versus predicted congestion maps.
+
 # Person E — Phase 1 Plan: Evaluation, Benchmark Synthesis, Spatial Mapping & Phase 2 Gap Analysis
 
 **Role:** Person E (Lead Evaluator, Benchmark Synthesizer, Congestion Spatial Analyst & Phase 1 Integration Lead)  
@@ -28,7 +30,7 @@ Person E's mandate directly fulfills the project requirements set forth in the c
 | `historical_average` | Train lookup table (Day, 5-min slot) | 5m, 15m, 30m, 60m | Mean valid speed | Person C | Time-of-week profile baseline (DCRNN standard) |
 | `rf_exp_a` | Lag only (12 features) | 5m, 15m, 30m, 60m | Squared Error | Person D | Ablation: Pure autoregressive lags ($t, \dots, t-11$) |
 | `rf_exp_b` | Lags + Temporal (19 features) | 5m, 15m, 30m, 60m | Squared Error | Person D | Ablation: Lags + diurnal & weekly cycles |
-| `rf_exp_c` | Lags + Rolling (23 features) | 5m, 15m, 30m, 60m | Squared Error | Person D | Ablation: Lags + short/long rolling stats |
+| `rf_exp_c` | Lags + Temporal + Rolling (27 features) | 5m, 15m, 30m, 60m | Squared Error | Person D | Ablation: Lags + short/long rolling stats |
 | `rf_exp_d` (Full RF) | Full 32 features | 5m, 15m, 30m, 60m | Squared Error | Person D | Person D Headline Model (Random Forest) |
 | `xgboost_32` | Full 32 shared features | 5m, 15m, 30m, 60m | Absolute Error (L1) | Person C | Person C Direct Like-for-Like Model |
 | `xgboost_ha` | 32 features + 4 HA history features | 5m, 15m, 30m, 60m | Absolute Error (L1) | Person C | Person C Augmented History Model |

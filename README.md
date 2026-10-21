@@ -1,147 +1,68 @@
-# Traffic Flow Capstone — Phase 1 Complete (Persons A, B, C, D, and E)
+# Traffic Flow Capstone Phase 1
 
-Predict congestion in a road network and test whether graph-based learning improves on independent road segment forecasts.
+Phase 1 integrates all five roles: A data quality/EDA, B causal features, C baselines and XGBoost, D Random Forest/ablations, E independently recomputed temporal/spatial evaluation and synthesis.
 
-This repository contains the complete deliverables for **Phase 1: Segment-Level Applied Machine Learning Baselines & Spatial Traffic Evaluation** on the METR-LA dataset.
+Results and limits are generated in [the verified report](reports/person_e_report.md). The IEEE-style Phase 1 paper is in `reports/paper/`. This is an academic Phase 1 study, not a deployed traffic-control system.
 
----
+## Data and protocol
 
-## 1. Measured Dataset Summary
+METR-LA: 34,272 five-minute timestamps by 207 sensors; 2012-03-01 through 2012-06-27 on the stored clock. Speed units and timezone are unverified. The 8.109% exact-zero readings are treated as unavailable, with no imputed ground truth. Raw files and checksums are preserved. The chronological grid split is 70/10/20; 12 history observations predict 5, 15, 30 and 60 minutes. All four targets stay in the same partition. Only a sensor's own history enters its forecasts.
 
-| Item | Verified Result |
-| --- | --- |
-| Speed table | 34,272 timestamps × 207 sensors (7,094,304 total readings) |
-| Stored date range | 2012-03-01 00:00 to 2012-06-27 23:55 UTC |
-| Sampling | Exactly 5 minutes; no duplicate or missing timestamps |
-| NaN / infinity / negative readings | 0 / 0 / 0 |
-| Exact zeros | 575,302 readings, 8.109% of all cells (treated as missing/invalid benchmark data) |
-| All-sensor zero timestamps | 2,148, grouped into 97 contiguous blocks |
-| Graph alignment | All speed sensor IDs and their order match the stored 207×207 adjacency |
-| Constant / unusually low-variance sensors | None under the declared valid-speed rule |
+## Verified test results
 
-The [quality report](reports/data_quality_report.md) contains the evidence and interpretation. Raw files are unchanged. Exact zeros are treated as benchmark missing/suspect, while positive near-zero speeds remain valid. No imputation is performed on targets. Speed units and timezone are unverified; plots use source units (likely mph) and the stored clock.
+| Horizon | Model | MAE | RMSE | MAPE % | Valid targets |
+| --- | --- | --- | --- | --- | --- |
+| 5min | Persistence | 2.814 | 4.627 | 6.49 | 1,245,052 |
+| 5min | Historical average | 4.188 | 7.855 | 13.04 | 1,245,052 |
+| 5min | Random Forest 32 | 2.452 | 4.156 | 6.02 | 1,245,052 |
+| 5min | XGBoost 32 | 2.362 | 4.151 | 5.76 | 1,245,052 |
+| 5min | XGBoost plus HA 36 | 2.312 | 4.065 | 5.66 | 1,245,052 |
+| 15min | Persistence | 3.499 | 6.418 | 8.61 | 1,245,040 |
+| 15min | Historical average | 4.188 | 7.855 | 13.04 | 1,245,040 |
+| 15min | Random Forest 32 | 3.167 | 5.763 | 8.56 | 1,245,040 |
+| 15min | XGBoost 32 | 2.970 | 5.806 | 7.92 | 1,245,040 |
+| 15min | XGBoost plus HA 36 | 2.844 | 5.540 | 7.63 | 1,245,040 |
+| 30min | Persistence | 4.206 | 8.052 | 10.86 | 1,245,022 |
+| 30min | Historical average | 4.188 | 7.855 | 13.04 | 1,245,022 |
+| 30min | Random Forest 32 | 3.871 | 7.002 | 11.10 | 1,245,022 |
+| 30min | XGBoost 32 | 3.564 | 7.129 | 10.27 | 1,245,022 |
+| 30min | XGBoost plus HA 36 | 3.275 | 6.546 | 9.49 | 1,245,022 |
+| 60min | Persistence | 5.380 | 10.344 | 14.53 | 1,244,986 |
+| 60min | Historical average | 4.189 | 7.855 | 13.04 | 1,244,986 |
+| 60min | Random Forest 32 | 4.854 | 8.410 | 14.48 | 1,244,986 |
+| 60min | XGBoost 32 | 4.393 | 8.720 | 13.74 | 1,244,986 |
+| 60min | XGBoost plus HA 36 | 3.688 | 7.470 | 11.34 | 1,244,986 |
 
----
+RF and XGBoost 32 share exactly 32 features. XGBoost plus HA uses 36 and is labelled separately. Actual per-sensor forecast errors and predicted-versus-observed maps replace the previous speed-volatility proxy. Geographic regions are coordinate bins, not verified named highways. Claims of proven shockwave propagation or inevitable graph-model gains are excluded.
 
-## 2. Phase 1 Team Roles & Deliverables
+## Reproduction
 
-| Role | Author | Key Deliverables | Reports & Documentation |
-|---|---|---|---|
-| **Person A** | Person A | Canonical HDF5 ingestion, 10 EDA figures, sensor metadata, split contract | [person_a_plan.md](reports/person_a_plan.md), [data_quality_report.md](reports/data_quality_report.md), [verification.md](reports/verification.md) |
-| **Person B** | Person B | 32-feature causal pipeline, train/val/test parquets, boundary rules | [person_b_handoff.md](reports/person_b_handoff.md), [person_c_d_handoff.md](reports/person_c_d_handoff.md) |
-| **Person C** | Person C | Persistence, Historical Average, XGBoost (32), XGBoost + HA (36) | [person_c_report.md](reports/person_c_report.md), [person_c_e_handoff.md](reports/person_c_e_handoff.md) |
-| **Person D** | Person D | Random Forest models (4 horizons), 4 feature ablation tiers (Exp A–D) | [person_d_report.md](reports/person_d_report.md) |
-| **Person E** | **Person E** | **Unified benchmark synthesis, peak/off-peak slicing, spatial maps, Phase 2 gap bridge, Viva guide** | **[person_e_report.md](reports/person_e_report.md), [phase1_synthesis_report.md](reports/phase1_synthesis_report.md), [phase2_graph_gap_analysis.md](reports/phase2_graph_gap_analysis.md), [person_e_viva_guide.md](reports/person_e_viva_guide.md)** |
-
----
-
-## 3. Master Benchmark Scorecard (Out-of-Time Test Set)
-
-All metrics strictly filter out invalid/zero targets matching Li et al. (ICLR 2018, DCRNN benchmark). Test partition: June 4 – June 27, 2012 (~1.245M valid predictions per horizon).
-
-| Horizon | Persistence | Hist. Avg | Random Forest (32) | XGBoost (32) | XGBoost + HA (36) | Best Model MAE | Improvement vs Persistence |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| **5 min** | 2.814 | 4.188 | 2.453 | 2.362 | **2.312** | **XGBoost + HA** | **+17.8%** |
-| **15 min** | 3.499 | 4.188 | 3.168 *(RMSE 5.764)* | 2.970 | **2.844** | **XGBoost + HA** | **+18.7%** |
-| **30 min** | 4.206 | 4.188 | 3.871 *(RMSE 7.003)* | 3.563 | **3.275** | **XGBoost + HA** | **+22.1%** |
-| **60 min** | 5.381 | 4.189 | 4.855 *(RMSE 8.410)* | 4.390 | **3.688** | **XGBoost + HA** | **+31.5%** |
-
-### Key Benchmark Discoveries:
-1. **L1 vs L2 Loss Duality:** On the identical 32 features, XGBoost wins on MAE and MAPE (trained with L1 absolute-error loss), while Random Forest wins on RMSE at 15m, 30m, and 60m (trained with L2 squared-error loss).
-2. **The 60-Minute Inflection Point:** Plain XGBoost (32 features) loses to Historical Average at 60 min (4.390 vs 4.189) because features lack sensor identity; XGBoost + HA resolves this by adding 4 leave-one-out historical features (**3.688 MAE**).
-3. **Rush-Hour Disparity:** Evening peak (16:00–19:00) error is **75.5% higher** than off-peak error at 15 min (4.484 vs 2.555 MAE).
-4. **Spatial Corridor Bottlenecks:** The I-405 Sepulveda Pass (32.2% drop) and I-10 Santa Monica Freeway (31.3% drop) suffer the most severe congestion collapses, while the I-110 Downtown hub exhibits the highest speed variance ($\sigma = 16.12$ mph).
-
----
-
-## 4. Run & Reproduce
+Use Python 3.12. Install `requirements-phase1-executed.txt` in a fresh environment for the exact completion versions; `requirements.txt` provides broader supported ranges. The verified local environment is `.phase1-venv/bin/python`, which inherits the existing scientific packages and adds official XGBoost 3.4.1. The optional numeric JSON reader also matches a scalar walk and the official runtime on 96 validation rows for each saved model. New XGBoost training requires the official package.
 
 ```bash
-# 1. Initialize environment
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt xgboost scikit-learn seaborn
-
-# 2. Run Person E benchmark and spatial evaluation pipeline (~2.5s)
-.venv/bin/python scripts/run_person_e.py
-
-# 3. Run all unit tests for Person E (15 tests passing)
-.venv/bin/python -m unittest tests/test_person_e.py -v
-
-# 4. Run entire project unit tests (54+ tests)
-.venv/bin/python -m unittest discover -s tests -v
-
-# 5. Build and execute storytelling Notebook 03
-.venv/bin/python scripts/build_notebook_03.py
+python -m src.data.dataset_builder
+# Re-score the eight saved XGBoost boosters without retraining
+NUMBA_NUM_THREADS=4 python scripts/run_person_c.py --predict-only
+# Regenerate all 16 fixed-parameter RF fits and save their models
+python scripts/run_person_d.py --save-models
+python scripts/predict_person_d.py
+python scripts/run_person_e.py
+python -m unittest discover -s tests -v
+python scripts/build_notebook_03.py
+python scripts/verify_phase1.py
+python scripts/build_phase1_paper.py
 ```
 
----
+For a full orchestration with logs and checkpoints use `python scripts/complete_phase1.py`. Set `MPLCONFIGDIR` and `XDG_CACHE_HOME` to writable project cache directories in restricted environments. `run_person_d.py --resume --save-models` resumes an interrupted fixed-parameter run. Datasets, predictions and large RF model files are derived artifacts; transfer or regenerate them separately.
 
-## 5. Repository Structure
+## Roles and evidence
 
-```
-├── configs/
-│   ├── features.yaml                       ← Person B feature configuration
-│   └── data_quality.yaml                   ← Person A quality rules
-├── data/
-│   ├── metadata/
-│   │   ├── sensors.csv                     ← 207 sensors with geo coordinates
-│   │   ├── split_contract.json             ← Chronological split boundaries
-│   │   ├── person_c_results.json           ← Person C baseline/XGBoost metrics
-│   │   ├── person_d_results.json           ← Person D Random Forest metrics
-│   │   ├── person_e_results.json           ← Person E master benchmark JSON
-│   │   ├── corridor_performance.csv        ← Highway corridor speed drops
-│   │   └── sensor_error_rankings.csv       ← Volatility rankings for 207 sensors
-│   └── raw/
-│       ├── graph_sensor_locations.csv      ← Sensor coordinates
-│       ├── graph_sensor_ids.txt            ← Ordered sensor IDs
-│       └── manifest.json                   ← Raw file checksums & provenance
-├── figures/
-│   ├── person_e_horizon_metrics_comparison.png
-│   ├── person_e_peak_vs_offpeak_analysis.png
-│   ├── person_e_congestion_map_morning_peak.png
-│   ├── person_e_congestion_map_evening_peak.png
-│   ├── person_e_spatial_error_corridors.png
-│   ├── person_e_feature_importance_comparison.png
-│   ├── person_e_rf_ablation_progression.png
-│   └── person_e_graph_propagation_gap.png
-├── models/
-│   └── person_c/                           ← 8 trained XGBoost boosters
-├── notebooks/
-│   ├── 01_data_understanding.ipynb         ← Person A real-data EDA
-│   ├── 02_data_quality.ipynb               ← Person A validation & zeros
-│   └── 03_model_evaluation_and_congestion_maps.ipynb ← Person E executed notebook
-├── reports/
-│   ├── person_e_plan.md                    ← Person E master plan
-│   ├── person_e_report.md                  ← Person E formal evaluation report
-│   ├── phase1_synthesis_report.md          ← Complete Phase 1 capstone synthesis
-│   ├── phase2_graph_gap_analysis.md        ← Gap analysis & bridge to GAT/DL
-│   └── person_e_viva_guide.md              ← Comprehensive Viva Defense Guide
-├── scripts/
-│   ├── run_person_c.py                     ← Person C baseline/XGBoost runner
-│   ├── run_person_d.py                     ← Person D Random Forest runner
-│   ├── run_person_e.py                     ← Person E master evaluation runner
-│   └── build_notebook_03.py                ← Notebook 03 builder & executor
-├── src/
-│   ├── models/
-│   │   ├── metrics.py                      ← Unified evaluation metrics
-│   │   ├── evaluation.py                   ← Multi-model benchmark matrix engine
-│   │   ├── baselines.py                    ← Persistence & Historical Average
-│   │   ├── xgboost_model.py                ← XGBoost trainers & boosters
-│   │   └── random_forest.py                ← Random Forest models
-│   └── visualization/
-│       ├── spatial_mapping.py              ← 2D highway mapping & corridors
-│       └── benchmark_plots.py              ← Multi-metric visual suite
-└── tests/
-    ├── test_person_c.py                    ← Person C unit tests
-    ├── test_person_d.py                    ← Person D unit tests
-    └── test_person_e.py                    ← Person E unit tests (15 passing)
-```
+| Person | Delivery | Evidence |
+|---|---|---|
+| A | Raw validation, quality, EDA | `reports/verification.md`, notebooks 01/02 |
+| B | 32 features and chronological partitions | `src/data/`, `reports/person_c_d_handoff.md` |
+| C | Baselines, XGBoost 32 and HA 36 | `models/person_c/`, `person_c_results.json` |
+| D | RF, 12/19/27/32-feature ablations | `person_d_results.json`, saved RF models |
+| E | Common metrics, all-model temporal slices, spatial forecast errors, paired uncertainty | `phase1_metrics.csv`, `sensor_forecast_metrics.csv`, `paired_bootstrap.csv` |
 
----
-
-## 6. Phase 2 Transition Roadmap
-
-In Phase 2, the project shifts from segment-level independent applied machine learning models to **network-aware Deep Graph Learning**:
-1. **Graph Attention Networks (GAT):** Dynamic spatial attention $\alpha_{ij}$ modeling backward shockwave spillbacks over the 207-node road graph.
-2. **Diffusion Convolutional Recurrent Neural Networks (DCRNN):** Bidirectional graph random walks coupled with sequence-to-sequence GRU modeling.
-3. **Simulated Signal Policy Experiments:** Traffic signal timing evaluation inside **SUMO (Simulation of Urban MObility)** or **CityFlow** (*strictly designated as simulated only; no live traffic control claimed*).
+The detailed completion audit is `reports/phase1_completion_verification.md`. No GAT/DCRNN training or signal simulation belongs to Phase 1.

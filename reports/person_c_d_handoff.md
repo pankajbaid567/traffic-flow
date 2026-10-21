@@ -33,7 +33,7 @@ If you don't have the parquets, rebuild them from the project root (about 12 s):
 /opt/anaconda3/bin/python -m src.data.dataset_builder
 ```
 
-The output is deterministic. Check your sha256 values against `dataset_summary.json`. Mine start with train `a50806c6…`, val `92130f50…` and test `2d87322d…`.
+Check the file hashes against the current `dataset_summary.json`. With the recorded completion runtime, the hashes start with train `ab129039448d`, validation `29aec174438b` and test `7ab296dde492`. Parquet byte hashes can differ across library versions; use the pinned completion environment.
 
 ## Loading
 

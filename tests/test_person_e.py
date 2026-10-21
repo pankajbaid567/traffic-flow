@@ -1,4 +1,5 @@
 """Unit tests for Person E evaluation metrics, benchmark logic, and spatial mapping."""
+
 from __future__ import annotations
 
 import unittest
@@ -75,9 +76,9 @@ class TestPersonEMetrics(unittest.TestCase):
     def test_empty_mask_handling(self):
         y_true = np.array([0.0, 0.0])
         y_pred = np.array([10.0, 20.0])
-        self.assertEqual(masked_mae(y_true, y_pred), 0.0)
-        self.assertEqual(masked_rmse(y_true, y_pred), 0.0)
-        self.assertEqual(masked_mape(y_true, y_pred), 0.0)
+        self.assertTrue(np.isnan(masked_mae(y_true, y_pred)))
+        self.assertTrue(np.isnan(masked_rmse(y_true, y_pred)))
+        self.assertTrue(np.isnan(masked_mape(y_true, y_pred)))
 
 
 class TestPersonEEvaluationEngine(unittest.TestCase):
@@ -97,7 +98,9 @@ class TestPersonEEvaluationEngine(unittest.TestCase):
         self.assertIn("mape", df_bench.columns)
 
         # Check 5min XGBoost (32) MAE matches 2.362
-        xgb_5m = df_bench[(df_bench["horizon"] == "5min") & (df_bench["model"] == "xgboost_32")].iloc[0]
+        xgb_5m = df_bench[
+            (df_bench["horizon"] == "5min") & (df_bench["model"] == "xgboost_32")
+        ].iloc[0]
         self.assertAlmostEqual(xgb_5m["mae"], 2.362, places=3)
 
     def test_peak_offpeak_breakdown_structure(self):
@@ -117,7 +120,9 @@ class TestPersonEEvaluationEngine(unittest.TestCase):
         df_deg = compute_horizon_degradation(df_bench)
         self.assertIn("degradation_ratio_60_to_5", df_deg.columns)
         # Persistence degradation ratio should be > 1.8
-        pers_deg = df_deg[df_deg["model"] == "persistence"].iloc[0]["degradation_ratio_60_to_5"]
+        pers_deg = df_deg[df_deg["model"] == "persistence"].iloc[0][
+            "degradation_ratio_60_to_5"
+        ]
         self.assertGreater(pers_deg, 1.8)
 
 
@@ -125,15 +130,29 @@ class TestPersonESpatialMapping(unittest.TestCase):
     """Test suite for spatial mapping and corridor aggregation."""
 
     def test_assign_freeway_corridors(self):
-        sample_df = pd.DataFrame([
-            {"sensor_id": "1", "latitude": 34.05, "longitude": -118.45},  # Westside -> I-405
-            {"sensor_id": "2", "latitude": 34.22, "longitude": -118.25},  # North -> I-210
-            {"sensor_id": "3", "latitude": 34.04, "longitude": -118.35},  # Central -> I-10
-        ])
+        sample_df = pd.DataFrame(
+            [
+                {
+                    "sensor_id": "1",
+                    "latitude": 34.05,
+                    "longitude": -118.45,
+                },  # Westside -> I-405
+                {
+                    "sensor_id": "2",
+                    "latitude": 34.22,
+                    "longitude": -118.25,
+                },  # North -> I-210
+                {
+                    "sensor_id": "3",
+                    "latitude": 34.04,
+                    "longitude": -118.35,
+                },  # Central -> I-10
+            ]
+        )
         res = assign_freeway_corridors(sample_df)
-        self.assertEqual(res.loc[0, "corridor"], "I-405 (San Diego Fwy)")
-        self.assertEqual(res.loc[1, "corridor"], "I-210 (Foothill Fwy)")
-        self.assertEqual(res.loc[2, "corridor"], "I-10 (Santa Monica Fwy)")
+        self.assertEqual(res.loc[0, "corridor"], "Western")
+        self.assertEqual(res.loc[1, "corridor"], "Northern")
+        self.assertEqual(res.loc[2, "corridor"], "Central western")
 
     def test_load_sensor_geo_metadata_complete_network(self):
         df_sensors = load_sensor_geo_metadata()

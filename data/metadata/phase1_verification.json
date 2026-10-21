@@ -1,0 +1,1563 @@
+{
+  "verified_at_utc": "2026-10-21T09:22:56.794158+00:00",
+  "python": "3.12.2 | packaged by conda-forge | (main, Feb 16 2024, 20:54:21) [Clang 16.0.6 ]",
+  "platform": "macOS-15.6.1-arm64-arm-64bit",
+  "checks": [
+    {
+      "check": "raw preserved data/raw/adj_mx.pkl",
+      "passed": true,
+      "detail": "a35687c6e15aa228dc45027b0ed2a0ea0f4ec78f573deb992c595092d12f61b3"
+    },
+    {
+      "check": "raw preserved data/raw/graph_sensor_locations.csv",
+      "passed": true,
+      "detail": "eb8ea96e07358b45d0e4ba3b89c2673fa20c54af50150249e627389e749ade6f"
+    },
+    {
+      "check": "raw preserved data/raw/graph_sensor_ids.txt",
+      "passed": true,
+      "detail": "3ba026caa2e6263ab0ea54b0fa1b125dbfa7216544cd05313b555e826292b990"
+    },
+    {
+      "check": "raw preserved data/raw/provenance/DCRNN_README.md",
+      "passed": true,
+      "detail": "a6a05f7e8f5fb4613953bebd575f3cdf33705390de58181ed58078b455898e53"
+    },
+    {
+      "check": "raw preserved data/raw/provenance/DCRNN_LICENSE",
+      "passed": true,
+      "detail": "29414ec274aafdfde2e0e5f5e55f136fcd3d5e8514ab54f1809298eeb1fd5a43"
+    },
+    {
+      "check": "raw preserved data/raw/provenance/DCRNN_metrics.py.txt",
+      "passed": true,
+      "detail": "64575421c9ac1b0e14f2c3c11473acacc1b1f790a3344d0d6141939d154e0d6e"
+    },
+    {
+      "check": "raw preserved data/raw/provenance/DCRNN_eval_baseline_methods.py.txt",
+      "passed": true,
+      "detail": "dfb51d51bf0cb7df8c3883af4d9cddfaf116f2edb92f62f0ef454ca944eb8d17"
+    },
+    {
+      "check": "raw preserved data/raw/metr-la.h5",
+      "passed": true,
+      "detail": "64784b76d6fb8ec9bff4b6decafb354da2bb37840468fdccee5044e511277c05"
+    },
+    {
+      "check": "full software test suite",
+      "passed": true,
+      "detail": "82 tests, 0 failures, 0 errors, 0 skips"
+    },
+    {
+      "check": "official saved booster parity",
+      "passed": true,
+      "detail": "Eight models checked against the official runtime and a direct scalar tree walk"
+    },
+    {
+      "check": "input hash data/processed/predictions/person_c_val_predictions.parquet",
+      "passed": true,
+      "detail": "d41d92aa6dda08942792b056c13565fcae43adfd031443c653a9191af0fd677e"
+    },
+    {
+      "check": "input hash data/processed/predictions/person_d_val_predictions.parquet",
+      "passed": true,
+      "detail": "bf8eaaa1a5f7dab536f69519fcf9803fc324f2d5a889dcfa2bd102f117161bae"
+    },
+    {
+      "check": "input hash data/processed/predictions/person_c_test_predictions.parquet",
+      "passed": true,
+      "detail": "d890cf7488bdea6b288524fdaa8e6436d3a58d37191e08b2ea8031a436cd48c9"
+    },
+    {
+      "check": "input hash data/processed/predictions/person_d_test_predictions.parquet",
+      "passed": true,
+      "detail": "d649f35283e25a82fd8a38da5eafb7b7c07f8ca7fefc3e0be9f5b4d9c77e7d77"
+    },
+    {
+      "check": "input hash data/raw/manifest.json",
+      "passed": true,
+      "detail": "2fd2f1ac67f856bd349246e958f2db77d7f43dd01f9f82bc1a8183dc92ad3ace"
+    },
+    {
+      "check": "input hash data/metadata/split_contract.json",
+      "passed": true,
+      "detail": "38883553e5dd6076030c0c464e48effea2256b1e93b01ebf15002bdd31cdcf0a"
+    },
+    {
+      "check": "input hash data/processed/dataset_summary.json",
+      "passed": true,
+      "detail": "b82a40a1836a61c59eab850c07ef0763b816aaf11763069c7ebef2f873a174a5"
+    },
+    {
+      "check": "input hash models/person_c/xgb_15min.json",
+      "passed": true,
+      "detail": "86d233dbb6b2e0837ed446c5c9708e48b0b2e9e1cdffafd3e26a8b3f4868285f"
+    },
+    {
+      "check": "input hash models/person_c/xgb_30min.json",
+      "passed": true,
+      "detail": "45aa4e4e02bf43e653b89a641aca3c5e792d722e03193359043052f556def062"
+    },
+    {
+      "check": "input hash models/person_c/xgb_5min.json",
+      "passed": true,
+      "detail": "46212070ec8245c7f8d6c728674e75ecc3ad0eb534a84ccd655b392553de8782"
+    },
+    {
+      "check": "input hash models/person_c/xgb_60min.json",
+      "passed": true,
+      "detail": "82ddd85f755c8e1f05500d227fd9f04d2823f55a702c6e1ef8c6454fec54dc23"
+    },
+    {
+      "check": "input hash models/person_c/xgb_ha_15min.json",
+      "passed": true,
+      "detail": "fd2cc7a0a33cccae4e78cb01d6fae8ccda47f5dc8a0b61a50901c01876819de3"
+    },
+    {
+      "check": "input hash models/person_c/xgb_ha_30min.json",
+      "passed": true,
+      "detail": "afd863859f1fe84a1ed074a9b70e724e1abe4613d16fc64280704e3384c422be"
+    },
+    {
+      "check": "input hash models/person_c/xgb_ha_5min.json",
+      "passed": true,
+      "detail": "0c22e92cfebb29922def947766c73107e2e8d76c93e7215d58a3700bb224a2bd"
+    },
+    {
+      "check": "input hash models/person_c/xgb_ha_60min.json",
+      "passed": true,
+      "detail": "575592cf1e5063df52aa33d89096519d116a37c09b7d4c4670b2b29fa3eae4e2"
+    },
+    {
+      "check": "input hash models/person_d/rf_exp_A_15min.joblib",
+      "passed": true,
+      "detail": "15beb7ac6481df25efe82b0732d89763fd85bb5b66fd2c234c5f859ebf1eb43f"
+    },
+    {
+      "check": "input hash models/person_d/rf_exp_A_30min.joblib",
+      "passed": true,
+      "detail": "638647b522afdbc50637fcc740e623628d123dd96f7dd2528f96980578050c76"
+    },
+    {
+      "check": "input hash models/person_d/rf_exp_A_5min.joblib",
+      "passed": true,
+      "detail": "21726bba1aec8e2c05df2b527b5822f0aa093acfbfc46ef74acb5cbe4d832ef2"
+    },
+    {
+      "check": "input hash models/person_d/rf_exp_A_60min.joblib",
+      "passed": true,
+      "detail": "677dc4e1b5acfb43e0c17db4d6fa1e37a2615b0a5b23a2e829c1939fb3a2ac0b"
+    },
+    {
+      "check": "input hash models/person_d/rf_exp_B_15min.joblib",
+      "passed": true,
+      "detail": "16df9042ec5cd13f174c7843e0807aa0a60335aff83c6d9f86c3c008723161c3"
+    },
+    {
+      "check": "input hash models/person_d/rf_exp_B_30min.joblib",
+      "passed": true,
+      "detail": "5a1b456f96a29f68909aa035cb45ce5770dba832ff1a5a78d8ba978597e14ab4"
+    },
+    {
+      "check": "input hash models/person_d/rf_exp_B_5min.joblib",
+      "passed": true,
+      "detail": "0c0965fda993a999714021cffd4a4fe96f860fc8a645fccf940194a979ee86f3"
+    },
+    {
+      "check": "input hash models/person_d/rf_exp_B_60min.joblib",
+      "passed": true,
+      "detail": "f6a73a6ad57c26e4706903025483fd5afadf78c74f195ccabc197da6a1324d24"
+    },
+    {
+      "check": "input hash models/person_d/rf_exp_C_15min.joblib",
+      "passed": true,
+      "detail": "173c159a70aaba0391c0b2f6d7a8a56f5e22fd5297798d008569bf4e4ab8fac1"
+    },
+    {
+      "check": "input hash models/person_d/rf_exp_C_30min.joblib",
+      "passed": true,
+      "detail": "e96c97fc2cce9838d56d4f2107c95169736ce203aadbcde084cc2e487fd38bd0"
+    },
+    {
+      "check": "input hash models/person_d/rf_exp_C_5min.joblib",
+      "passed": true,
+      "detail": "f0127af09bfef059118006cbdba5bd4407e5ba78b00ac600ca323e4668324a5a"
+    },
+    {
+      "check": "input hash models/person_d/rf_exp_C_60min.joblib",
+      "passed": true,
+      "detail": "2ac44fc9159297ad5b00eb396420de26ee5fc66294b6f046c5b8cf52e226bedd"
+    },
+    {
+      "check": "input hash models/person_d/rf_exp_D_15min.joblib",
+      "passed": true,
+      "detail": "ffb71eb0e6c7f91bb244e0cfecb055d712fc0656ef353e9f300c8aafbad3ca5f"
+    },
+    {
+      "check": "input hash models/person_d/rf_exp_D_30min.joblib",
+      "passed": true,
+      "detail": "15462d4be928587bf3e8dbff67fa5a15d0f8aed5abccf8126217723e1e4de3e7"
+    },
+    {
+      "check": "input hash models/person_d/rf_exp_D_5min.joblib",
+      "passed": true,
+      "detail": "d8c06d4abfb3a3f09f16bfbf33ba9832703575c1819dac5529a9c9585ecee0aa"
+    },
+    {
+      "check": "input hash models/person_d/rf_exp_D_60min.joblib",
+      "passed": true,
+      "detail": "3bad755ddaf1153e215680948b5f9c7013da9af05e5e29c5aec243bb42031ab0"
+    },
+    {
+      "check": "input hash src/__init__.py",
+      "passed": true,
+      "detail": "f7f5d23b033217ee897c986114815ae17c3e664e387c246e1d830c55456000cc"
+    },
+    {
+      "check": "input hash src/data/__init__.py",
+      "passed": true,
+      "detail": "59c2ad2dc7e55336760fb9e9055867692d4708fa188ab6cd445113e4a69c5d48"
+    },
+    {
+      "check": "input hash src/data/dataset_builder.py",
+      "passed": true,
+      "detail": "fc0f8b9f17c7b630ee484e1f7b456b5fdeb9e509e60676074f2009c8a6f94a8a"
+    },
+    {
+      "check": "input hash src/data/descriptive.py",
+      "passed": true,
+      "detail": "138bcdcfadf953ec5997c97e33d4a2ab034ae1a71b61a1b4d39ae873ae597244"
+    },
+    {
+      "check": "input hash src/data/eda.py",
+      "passed": true,
+      "detail": "98512cd035ec209d7ee6ff2aa0a15bff0364d3218bd096950faa11f8dde4a83e"
+    },
+    {
+      "check": "input hash src/data/features.py",
+      "passed": true,
+      "detail": "3efa11313530aa2fd513dcc6f46f6df88f8d012b165c04402c192043a006fdfc"
+    },
+    {
+      "check": "input hash src/data/load_data.py",
+      "passed": true,
+      "detail": "1c6ff409a2e16c19a3616f0d202fa91f08577ef734e3694b4d652e4e5f58c26c"
+    },
+    {
+      "check": "input hash src/data/quality.py",
+      "passed": true,
+      "detail": "6313265fe3adc38539914570ee8e761e448aa25d52de5f1d8aba430fa166cd61"
+    },
+    {
+      "check": "input hash src/data/run_person_a.py",
+      "passed": true,
+      "detail": "b5d3751e60a09d7a019111a4257bee19d8430a47bbbb015ba9f069cc8e78293c"
+    },
+    {
+      "check": "input hash src/data/split.py",
+      "passed": true,
+      "detail": "d18e8e81956e79add25876c2ed3614aba604908c018b3f9fa9ca262c4c318ccf"
+    },
+    {
+      "check": "input hash src/models/__init__.py",
+      "passed": true,
+      "detail": "1f2b25bd798066f9e7fbd30d8e9f93949a19e38cae26d60994ef56e712760f3a"
+    },
+    {
+      "check": "input hash src/models/baselines.py",
+      "passed": true,
+      "detail": "b143ae94dde8d0a02d1b2ffa3c213cbba366d995605161023c21f204403a0611"
+    },
+    {
+      "check": "input hash src/models/evaluation.py",
+      "passed": true,
+      "detail": "e0bfdd863af06fdab312e39d936b892d98ee4a10a9af95311f1cd57eb6e3427c"
+    },
+    {
+      "check": "input hash src/models/metrics.py",
+      "passed": true,
+      "detail": "b1883475dd822f25e3d50873527f4c980cf41f82875134d0e980bd233001d280"
+    },
+    {
+      "check": "input hash src/models/prediction_evaluation.py",
+      "passed": true,
+      "detail": "b87093cbaa025aeac88efaa7ac897935b673b444b0194fd6d615a238e4925930"
+    },
+    {
+      "check": "input hash src/models/random_forest.py",
+      "passed": true,
+      "detail": "50deb05ea5e7b19d2ffa370916b457a119fd9cf8c72d3fced94a45da8d747633"
+    },
+    {
+      "check": "input hash src/models/saved_booster.py",
+      "passed": true,
+      "detail": "96011cd2dc2cc94f56f6093324364fae74901386961a857474feb13173cb1cb2"
+    },
+    {
+      "check": "input hash src/models/xgboost_model.py",
+      "passed": true,
+      "detail": "f51460161bc1e8947b747ab55d0666f1a1e3453fb059f2cbe87c35cbe19eebcd"
+    },
+    {
+      "check": "input hash src/reporting/__init__.py",
+      "passed": true,
+      "detail": "7a16e4c5ce29534a3a9859ed1c122cf98d1461525259501905ca44cb22d048d8"
+    },
+    {
+      "check": "input hash src/reporting/phase1_reports.py",
+      "passed": true,
+      "detail": "65c7480f38f4fde7a5577e742ee1e7869805201647f02422b175042cb531eaa4"
+    },
+    {
+      "check": "input hash src/visualization/__init__.py",
+      "passed": true,
+      "detail": "e5e3140fcb5845b1d015574a91822076c271426953f9cde760575dc1c4fbe69f"
+    },
+    {
+      "check": "input hash src/visualization/benchmark_plots.py",
+      "passed": true,
+      "detail": "6a49061740eaa2e2fd7094d29156f6baf42be7f47a8445483cbccf60b5477074"
+    },
+    {
+      "check": "input hash src/visualization/spatial_mapping.py",
+      "passed": true,
+      "detail": "13e76c162f3a3471c3e8c589bea3c8c06ba2994cf10abe19b9989c94836cb9ea"
+    },
+    {
+      "check": "input hash scripts/acquire_data.py",
+      "passed": true,
+      "detail": "55375e8b2b2f8d396147ca5ee6ab6de59281d609e15b101af3d1d110427f62fa"
+    },
+    {
+      "check": "input hash scripts/build_notebook_03.py",
+      "passed": true,
+      "detail": "5b14a4dfdb55b492535eaafb31fd5a71e2c51046a55d35e094a6f0c2104c8b7f"
+    },
+    {
+      "check": "input hash scripts/build_phase1_paper.py",
+      "passed": true,
+      "detail": "2a7e1ca08c072da401e287bd9bd4fd4326faea2e9be4e77497774051adafba78"
+    },
+    {
+      "check": "input hash scripts/complete_phase1.py",
+      "passed": true,
+      "detail": "d97b57ab68679500aaf28eb960ef1a50b3fdca33db28d96d6473121f2aeed6b0"
+    },
+    {
+      "check": "input hash scripts/execute_notebooks.py",
+      "passed": true,
+      "detail": "08f67b8bc8ad42bb652ea7361f12f270fc2cc35b7c67f348e9419ff798dcb2ef"
+    },
+    {
+      "check": "input hash scripts/predict_person_d.py",
+      "passed": true,
+      "detail": "ce229ab8789f3cf6e3b0de91c19eb6398777343fb8451f7d1c50973d128f929c"
+    },
+    {
+      "check": "input hash scripts/run_person_c.py",
+      "passed": true,
+      "detail": "cbee765f6ca237284568ca3af567be2bad7cb34670e8e02b54967d854e46d406"
+    },
+    {
+      "check": "input hash scripts/run_person_d.py",
+      "passed": true,
+      "detail": "a36cdf129ffc108b69525a13a60c97a330db79270d9c9c1aa5caf444a93cb93a"
+    },
+    {
+      "check": "input hash scripts/run_person_e.py",
+      "passed": true,
+      "detail": "730332cac06ce4d12fa19f7dd0631dad2b62821b773593a1fb2c8b4f10182462"
+    },
+    {
+      "check": "input hash scripts/run_phase1_tests.py",
+      "passed": true,
+      "detail": "9983e55a67cf1a581e36fbf42d47e2a6ef7ce12d212a74e64e8e6bec48a8fa22"
+    },
+    {
+      "check": "input hash scripts/verify_phase1.py",
+      "passed": true,
+      "detail": "c6a2191c1d6567c20366e74e884971dff5d2ada1391b6786e87ac64903c2aa12"
+    },
+    {
+      "check": "input hash scripts/verify_saved_boosters.py",
+      "passed": true,
+      "detail": "fb945b078272247fc586bd07b838a6b551e4c1199ab6dbb46759274a3050d620"
+    },
+    {
+      "check": "complete metric grid",
+      "passed": true,
+      "detail": "200 rows; expected 200"
+    },
+    {
+      "check": "all metrics finite",
+      "passed": true,
+      "detail": "No unobserved slices masquerade as zero error"
+    },
+    {
+      "check": "equal counts",
+      "passed": true,
+      "detail": "Every model scores identical valid targets"
+    },
+    {
+      "check": "raw origin and sensor keys val",
+      "passed": true,
+      "detail": "Every forecast has 12 available grid timestamps and a verified raw sensor ID"
+    },
+    {
+      "check": "raw target count val 5min",
+      "passed": true,
+      "detail": "657759"
+    },
+    {
+      "check": "direct raw target equality val 5min",
+      "passed": true,
+      "detail": "Every saved target equals the untouched raw reading at its exact elapsed forecast offset"
+    },
+    {
+      "check": "all targets inside partition val 5min",
+      "passed": true,
+      "detail": "Target boundaries independently checked against the raw timestamp grid"
+    },
+    {
+      "check": "raw target count val 15min",
+      "passed": true,
+      "detail": "657752"
+    },
+    {
+      "check": "direct raw target equality val 15min",
+      "passed": true,
+      "detail": "Every saved target equals the untouched raw reading at its exact elapsed forecast offset"
+    },
+    {
+      "check": "all targets inside partition val 15min",
+      "passed": true,
+      "detail": "Target boundaries independently checked against the raw timestamp grid"
+    },
+    {
+      "check": "raw target count val 30min",
+      "passed": true,
+      "detail": "657743"
+    },
+    {
+      "check": "direct raw target equality val 30min",
+      "passed": true,
+      "detail": "Every saved target equals the untouched raw reading at its exact elapsed forecast offset"
+    },
+    {
+      "check": "all targets inside partition val 30min",
+      "passed": true,
+      "detail": "Target boundaries independently checked against the raw timestamp grid"
+    },
+    {
+      "check": "raw target count val 60min",
+      "passed": true,
+      "detail": "657751"
+    },
+    {
+      "check": "direct raw target equality val 60min",
+      "passed": true,
+      "detail": "Every saved target equals the untouched raw reading at its exact elapsed forecast offset"
+    },
+    {
+      "check": "all targets inside partition val 60min",
+      "passed": true,
+      "detail": "Target boundaries independently checked against the raw timestamp grid"
+    },
+    {
+      "check": "raw origin and sensor keys test",
+      "passed": true,
+      "detail": "Every forecast has 12 available grid timestamps and a verified raw sensor ID"
+    },
+    {
+      "check": "raw target count test 5min",
+      "passed": true,
+      "detail": "1245052"
+    },
+    {
+      "check": "direct raw target equality test 5min",
+      "passed": true,
+      "detail": "Every saved target equals the untouched raw reading at its exact elapsed forecast offset"
+    },
+    {
+      "check": "all targets inside partition test 5min",
+      "passed": true,
+      "detail": "Target boundaries independently checked against the raw timestamp grid"
+    },
+    {
+      "check": "raw target count test 15min",
+      "passed": true,
+      "detail": "1245040"
+    },
+    {
+      "check": "direct raw target equality test 15min",
+      "passed": true,
+      "detail": "Every saved target equals the untouched raw reading at its exact elapsed forecast offset"
+    },
+    {
+      "check": "all targets inside partition test 15min",
+      "passed": true,
+      "detail": "Target boundaries independently checked against the raw timestamp grid"
+    },
+    {
+      "check": "raw target count test 30min",
+      "passed": true,
+      "detail": "1245022"
+    },
+    {
+      "check": "direct raw target equality test 30min",
+      "passed": true,
+      "detail": "Every saved target equals the untouched raw reading at its exact elapsed forecast offset"
+    },
+    {
+      "check": "all targets inside partition test 30min",
+      "passed": true,
+      "detail": "Target boundaries independently checked against the raw timestamp grid"
+    },
+    {
+      "check": "raw target count test 60min",
+      "passed": true,
+      "detail": "1244986"
+    },
+    {
+      "check": "direct raw target equality test 60min",
+      "passed": true,
+      "detail": "Every saved target equals the untouched raw reading at its exact elapsed forecast offset"
+    },
+    {
+      "check": "all targets inside partition test 60min",
+      "passed": true,
+      "detail": "Target boundaries independently checked against the raw timestamp grid"
+    },
+    {
+      "check": "sensor aggregation val 5min persistence all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 5min persistence peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 5min persistence off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 5min persistence morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 5min persistence evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 5min historical_average all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 5min historical_average peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 5min historical_average off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 5min historical_average morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 5min historical_average evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 5min random_forest_32 all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 5min random_forest_32 peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 5min random_forest_32 off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 5min random_forest_32 morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 5min random_forest_32 evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 5min xgboost_32 all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 5min xgboost_32 peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 5min xgboost_32 off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 5min xgboost_32 morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 5min xgboost_32 evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 5min xgboost_ha all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 5min xgboost_ha peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 5min xgboost_ha off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 5min xgboost_ha morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 5min xgboost_ha evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min persistence all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min persistence peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min persistence off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min persistence morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min persistence evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min historical_average all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min historical_average peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min historical_average off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min historical_average morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min historical_average evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min random_forest_32 all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min random_forest_32 peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min random_forest_32 off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min random_forest_32 morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min random_forest_32 evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min xgboost_32 all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min xgboost_32 peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min xgboost_32 off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min xgboost_32 morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min xgboost_32 evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min xgboost_ha all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min xgboost_ha peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min xgboost_ha off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min xgboost_ha morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 15min xgboost_ha evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min persistence all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min persistence peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min persistence off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min persistence morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min persistence evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min historical_average all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min historical_average peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min historical_average off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min historical_average morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min historical_average evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min random_forest_32 all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min random_forest_32 peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min random_forest_32 off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min random_forest_32 morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min random_forest_32 evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min xgboost_32 all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min xgboost_32 peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min xgboost_32 off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min xgboost_32 morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min xgboost_32 evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min xgboost_ha all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min xgboost_ha peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min xgboost_ha off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min xgboost_ha morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 30min xgboost_ha evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min persistence all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min persistence peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min persistence off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min persistence morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min persistence evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min historical_average all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min historical_average peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min historical_average off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min historical_average morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min historical_average evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min random_forest_32 all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min random_forest_32 peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min random_forest_32 off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min random_forest_32 morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min random_forest_32 evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min xgboost_32 all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min xgboost_32 peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min xgboost_32 off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min xgboost_32 morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min xgboost_32 evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min xgboost_ha all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min xgboost_ha peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min xgboost_ha off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min xgboost_ha morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation val 60min xgboost_ha evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min persistence all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min persistence peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min persistence off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min persistence morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min persistence evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min historical_average all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min historical_average peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min historical_average off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min historical_average morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min historical_average evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min random_forest_32 all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min random_forest_32 peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min random_forest_32 off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min random_forest_32 morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min random_forest_32 evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min xgboost_32 all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min xgboost_32 peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min xgboost_32 off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min xgboost_32 morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min xgboost_32 evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min xgboost_ha all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min xgboost_ha peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min xgboost_ha off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min xgboost_ha morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 5min xgboost_ha evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min persistence all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min persistence peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min persistence off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min persistence morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min persistence evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min historical_average all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min historical_average peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min historical_average off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min historical_average morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min historical_average evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min random_forest_32 all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min random_forest_32 peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min random_forest_32 off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min random_forest_32 morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min random_forest_32 evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min xgboost_32 all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min xgboost_32 peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min xgboost_32 off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min xgboost_32 morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min xgboost_32 evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min xgboost_ha all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min xgboost_ha peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min xgboost_ha off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min xgboost_ha morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 15min xgboost_ha evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min persistence all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min persistence peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min persistence off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min persistence morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min persistence evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min historical_average all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min historical_average peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min historical_average off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min historical_average morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min historical_average evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min random_forest_32 all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min random_forest_32 peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min random_forest_32 off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min random_forest_32 morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min random_forest_32 evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min xgboost_32 all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min xgboost_32 peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min xgboost_32 off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min xgboost_32 morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min xgboost_32 evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min xgboost_ha all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min xgboost_ha peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min xgboost_ha off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min xgboost_ha morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 30min xgboost_ha evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min persistence all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min persistence peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min persistence off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min persistence morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min persistence evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min historical_average all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min historical_average peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min historical_average off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min historical_average morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min historical_average evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min random_forest_32 all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min random_forest_32 peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min random_forest_32 off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min random_forest_32 morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min random_forest_32 evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min xgboost_32 all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min xgboost_32 peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min xgboost_32 off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min xgboost_32 morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min xgboost_32 evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min xgboost_ha all",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min xgboost_ha peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min xgboost_ha off_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min xgboost_ha morning_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "sensor aggregation test 60min xgboost_ha evening_peak",
+      "passed": true,
+      "detail": "Counts and absolute error sums reconstruct overall MAE"
+    },
+    {
+      "check": "XGBoost coverage",
+      "passed": true,
+      "detail": "8 frozen boosters"
+    },
+    {
+      "check": "RF coverage",
+      "passed": true,
+      "detail": "16 regenerated ablation models"
+    },
+    {
+      "check": "notebook 01_data_understanding.ipynb",
+      "passed": true,
+      "detail": "8 executed code cells"
+    },
+    {
+      "check": "notebook 02_data_quality.ipynb",
+      "passed": true,
+      "detail": "9 executed code cells"
+    },
+    {
+      "check": "notebook 03_model_evaluation_and_congestion_maps.ipynb",
+      "passed": true,
+      "detail": "9 executed code cells"
+    },
+    {
+      "check": "evaluation figure coverage",
+      "passed": true,
+      "detail": "14 figures"
+    }
+  ],
+  "status": "passed"
+}

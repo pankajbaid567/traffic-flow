@@ -4,6 +4,7 @@ Ingests results from Person C (baselines + XGBoost) and Person D (Random Forest)
 verifies metric alignment, and compiles unified cross-model benchmark tables,
 temporal slice breakdowns, and horizon degradation dynamics.
 """
+
 from __future__ import annotations
 
 import json
@@ -47,6 +48,14 @@ def build_unified_test_benchmark(
       - xgboost_32 (Person C, 32 shared features)
       - xgboost_ha (Person C, 32 features + 4 HA features)
     """
+    scored = METADATA_DIR / "phase1_metrics.csv"
+    if c_data is None and d_data is None and scored.exists():
+        metrics = pd.read_csv(scored)
+        return (
+            metrics[(metrics["split"] == "test") & (metrics["period"] == "all")]
+            .rename(columns={"n": "n_samples"})
+            .reset_index(drop=True)
+        )
     if c_data is None:
         c_data = load_person_c_results()
     if d_data is None:
@@ -60,66 +69,100 @@ def build_unified_test_benchmark(
         d_exp_d = d_data["experiments"]["D"][h]["test_metrics"]
 
         # Persistence
-        records.append({
-            "horizon": h,
-            "model": "persistence",
-            "model_type": "Naive Baseline",
-            "features": "speed_lag_0",
-            "mae": c_h_test["persistence"]["all"]["mae"],
-            "rmse": c_h_test["persistence"]["all"]["rmse"],
-            "mape": c_h_test["persistence"]["all"]["mape"],
-            "n_samples": c_h_test["persistence"]["all"]["n"],
-        })
+        records.append(
+            {
+                "horizon": h,
+                "model": "persistence",
+                "model_type": "Naive Baseline",
+                "features": "speed_lag_0",
+                "mae": c_h_test["persistence"]["all"]["mae"],
+                "rmse": c_h_test["persistence"]["all"]["rmse"],
+                "mape": c_h_test["persistence"]["all"]["mape"],
+                "n_samples": c_h_test["persistence"]["all"]["n"],
+            }
+        )
         # Historical Average
-        records.append({
-            "horizon": h,
-            "model": "historical_average",
-            "model_type": "Lookup Baseline",
-            "features": "time_of_week_lookup",
-            "mae": c_h_test["historical_average"]["all"]["mae"],
-            "rmse": c_h_test["historical_average"]["all"]["rmse"],
-            "mape": c_h_test["historical_average"]["all"]["mape"],
-            "n_samples": c_h_test["historical_average"]["all"]["n"],
-        })
+        records.append(
+            {
+                "horizon": h,
+                "model": "historical_average",
+                "model_type": "Lookup Baseline",
+                "features": "time_of_week_lookup",
+                "mae": c_h_test["historical_average"]["all"]["mae"],
+                "rmse": c_h_test["historical_average"]["all"]["rmse"],
+                "mape": c_h_test["historical_average"]["all"]["mape"],
+                "n_samples": c_h_test["historical_average"]["all"]["n"],
+            }
+        )
         # Random Forest (Exp D)
-        records.append({
-            "horizon": h,
-            "model": "random_forest_32",
-            "model_type": "Applied ML (Bagging)",
-            "features": "32_shared",
-            "mae": d_exp_d["mae"],
-            "rmse": d_exp_d["rmse"],
-            "mape": d_exp_d["mape"],
-            "n_samples": c_h_test["xgboost"]["all"]["n"],  # Same evaluation test partition
-        })
+        records.append(
+            {
+                "horizon": h,
+                "model": "random_forest_32",
+                "model_type": "Applied ML (Bagging)",
+                "features": "32_shared",
+                "mae": d_exp_d["mae"],
+                "rmse": d_exp_d["rmse"],
+                "mape": d_exp_d["mape"],
+                "n_samples": d_data["experiments"]["D"][h].get("test_samples"),
+            }
+        )
         # XGBoost (32 shared features)
-        records.append({
-            "horizon": h,
-            "model": "xgboost_32",
-            "model_type": "Applied ML (Boosting)",
-            "features": "32_shared",
-            "mae": c_h_test["xgboost"]["all"]["mae"],
-            "rmse": c_h_test["xgboost"]["all"]["rmse"],
-            "mape": c_h_test["xgboost"]["all"]["mape"],
-            "n_samples": c_h_test["xgboost"]["all"]["n"],
-        })
+        records.append(
+            {
+                "horizon": h,
+                "model": "xgboost_32",
+                "model_type": "Applied ML (Boosting)",
+                "features": "32_shared",
+                "mae": c_h_test["xgboost"]["all"]["mae"],
+                "rmse": c_h_test["xgboost"]["all"]["rmse"],
+                "mape": c_h_test["xgboost"]["all"]["mape"],
+                "n_samples": c_h_test["xgboost"]["all"]["n"],
+            }
+        )
         # XGBoost + HA (36 features)
-        records.append({
-            "horizon": h,
-            "model": "xgboost_ha",
-            "model_type": "Augmented Applied ML",
-            "features": "32_shared + 4_ha",
-            "mae": c_h_test["xgboost_ha"]["all"]["mae"],
-            "rmse": c_h_test["xgboost_ha"]["all"]["rmse"],
-            "mape": c_h_test["xgboost_ha"]["all"]["mape"],
-            "n_samples": c_h_test["xgboost_ha"]["all"]["n"],
-        })
+        records.append(
+            {
+                "horizon": h,
+                "model": "xgboost_ha",
+                "model_type": "Augmented Applied ML",
+                "features": "32_shared + 4_ha",
+                "mae": c_h_test["xgboost_ha"]["all"]["mae"],
+                "rmse": c_h_test["xgboost_ha"]["all"]["rmse"],
+                "mape": c_h_test["xgboost_ha"]["all"]["mape"],
+                "n_samples": c_h_test["xgboost_ha"]["all"]["n"],
+            }
+        )
 
     return pd.DataFrame(records)
 
 
 def build_peak_offpeak_breakdown(c_data: dict[str, Any] | None = None) -> pd.DataFrame:
     """Extract temporal slice error metrics across all horizons for test set."""
+    scored = METADATA_DIR / "phase1_metrics.csv"
+    if c_data is None and scored.exists():
+        metrics = pd.read_csv(scored)
+        metrics = metrics[metrics["split"] == "test"]
+        records = []
+        for (horizon, period), group in metrics.groupby(
+            ["horizon", "period"], sort=False
+        ):
+            if group["n"].nunique() != 1:
+                raise ValueError("Models must score identical target counts")
+            record = {
+                "horizon": horizon,
+                "period": period,
+                "rows": int(group["n"].iloc[0]),
+            }
+            for _, row in group.iterrows():
+                model = {
+                    "random_forest_32": "random_forest",
+                    "xgboost_32": "xgboost",
+                }.get(row["model"], row["model"])
+                for metric in ("mae", "rmse", "mape"):
+                    record[f"{model}_{metric}"] = row[metric]
+            records.append(record)
+        return pd.DataFrame(records)
     if c_data is None:
         c_data = load_person_c_results()
 
@@ -152,7 +195,7 @@ def build_rf_ablation_summary(d_data: dict[str, Any] | None = None) -> pd.DataFr
     exp_names = {
         "A": "Exp A (12 Lags)",
         "B": "Exp B (12 Lags + 7 Temporal)",
-        "C": "Exp C (12 Lags + 8 Rolling + 3 Trend)",
+        "C": "Exp C (12 Lags + 7 Temporal + 8 Rolling)",
         "D": "Exp D (Full 32 Features)",
     }
 
@@ -161,20 +204,22 @@ def build_rf_ablation_summary(d_data: dict[str, Any] | None = None) -> pd.DataFr
             exp = d_data["experiments"][code][h]
             val_m = exp["val_metrics"]
             test_m = exp.get("test_metrics", {})
-            records.append({
-                "horizon": h,
-                "experiment": code,
-                "label": label,
-                "n_features": exp["n_features"],
-                "fit_time_s": exp["fit_time_seconds"],
-                "val_mae": val_m["mae"],
-                "val_rmse": val_m["rmse"],
-                "val_mape": val_m["mape"],
-                "val_gain_vs_pers": exp["val_improvement_mae"],
-                "test_mae": test_m.get("mae"),
-                "test_rmse": test_m.get("rmse"),
-                "test_mape": test_m.get("mape"),
-            })
+            records.append(
+                {
+                    "horizon": h,
+                    "experiment": code,
+                    "label": label,
+                    "n_features": exp["n_features"],
+                    "fit_time_s": exp["fit_time_seconds"],
+                    "val_mae": val_m["mae"],
+                    "val_rmse": val_m["rmse"],
+                    "val_mape": val_m["mape"],
+                    "val_gain_vs_pers": exp["val_improvement_mae"],
+                    "test_mae": test_m.get("mae"),
+                    "test_rmse": test_m.get("rmse"),
+                    "test_mape": test_m.get("mape"),
+                }
+            )
 
     return pd.DataFrame(records)
 

@@ -1,3 +1,5 @@
+> Historical Person A delivery record from October 16. For the integrated Phase 1 completion and current results, see [the completion audit](phase1_completion_verification.md) and [the verified evaluation](person_e_report.md).
+
 # Person A — Phase 1 plan
 
 Project directory: `AML/traffic-flow-capstone`. Source repository: sibling `DCRNN` (read-only).

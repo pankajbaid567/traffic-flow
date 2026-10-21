@@ -8,6 +8,7 @@ Covers:
 
 Across horizons: 5min, 15min, 30min, 60min.
 """
+
 from __future__ import annotations
 
 import json
@@ -24,7 +25,9 @@ from src.models.metrics import compute_metrics
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def load_feature_groups(summary_path: Path | str = ROOT / "data/processed/dataset_summary.json") -> dict[str, list[str]]:
+def load_feature_groups(
+    summary_path: Path | str = ROOT / "data/processed/dataset_summary.json",
+) -> dict[str, list[str]]:
     """Load feature group definitions from dataset_summary.json."""
     summary_path = Path(summary_path)
     if not summary_path.is_file():
@@ -39,7 +42,7 @@ def build_model(
     max_depth: int = 15,
     max_samples: float = 0.1,
     random_state: int = 42,
-    n_jobs: int = -1,
+    n_jobs: int = 4,
 ) -> RandomForestRegressor:
     """Instantiate a standardized RandomForestRegressor for Person D ablations."""
     return RandomForestRegressor(
@@ -62,7 +65,7 @@ def train_and_evaluate(
     max_samples: float = 0.1,
     random_state: int = 42,
     evaluate_test: bool = False,
-) -> dict[str, Any]:
+) -> tuple[dict[str, Any], RandomForestRegressor]:
     """Train a Random Forest model on valid training targets and evaluate on val (and optionally test)."""
     valid_col = f"target_valid_{horizon}"
     target_col = f"target_{horizon}"
@@ -107,9 +110,12 @@ def train_and_evaluate(
         "n_features": len(features),
         "fit_time_seconds": round(fit_time, 2),
         "train_samples": int(len(X_train)),
+        "val_samples": int(len(X_val)),
         "val_metrics": val_metrics,
         "val_persistence_mae": val_persist_metrics["mae"],
-        "val_improvement_mae": round(val_persist_metrics["mae"] - val_metrics["mae"], 4),
+        "val_improvement_mae": round(
+            val_persist_metrics["mae"] - val_metrics["mae"], 4
+        ),
         "feature_importances": importances,
     }
 
@@ -123,7 +129,10 @@ def train_and_evaluate(
         test_persist_metrics = compute_metrics(y_test.to_numpy(), test_persistence)
 
         result["test_metrics"] = test_metrics
+        result["test_samples"] = int(len(X_test))
         result["test_persistence_mae"] = test_persist_metrics["mae"]
-        result["test_improvement_mae"] = round(test_persist_metrics["mae"] - test_metrics["mae"], 4)
+        result["test_improvement_mae"] = round(
+            test_persist_metrics["mae"] - test_metrics["mae"], 4
+        )
 
     return result, model
