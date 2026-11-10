@@ -224,6 +224,28 @@ class GATModelTest(unittest.TestCase):
             self.assertGreater(param_count, 500)
             print(f"[GAT param count] cfg={cfg} -> {param_count:,} parameters")
 
+    def test_attention_stats_synthetic_computation(self) -> None:
+        """Verify attention stats computation runs cleanly on synthetic attention maps."""
+        import numpy as np
+        import pandas as pd
+        from scripts.phase2_gat_attention_stats import compute_attention_stats
+
+        b, layers, heads, n = 4, 1, 2, 10
+        raw_logits = np.random.randn(b, layers, heads, n, n)
+        exp = np.exp(raw_logits - raw_logits.max(axis=-1, keepdims=True))
+        attn = exp / exp.sum(axis=-1, keepdims=True)
+        origin_ns = pd.date_range("2012-06-01 08:00", periods=b, freq="3h").asi8
+        adj = (np.random.rand(n, n) > 0.7).astype(np.float32)
+        np.fill_diagonal(adj, 1.0)
+
+        df = compute_attention_stats(attn, origin_ns, adj)
+        self.assertFalse(df.empty)
+        self.assertIn("entropy", df.columns)
+        self.assertIn("mass_self", df.columns)
+        self.assertIn("mass_downstream", df.columns)
+        self.assertIn("mass_upstream", df.columns)
+        self.assertEqual(len(df), n * 3)  # all, peak, off_peak
+
 
 if __name__ == "__main__":
     unittest.main()
