@@ -14,3 +14,5 @@ models/person_d/*.joblib
 reports/paper/qa/
 
 .phase1-venv/
+.phase2-venv/
+.phase2-cache/

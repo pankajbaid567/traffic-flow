@@ -245,3 +245,7 @@ Or run everything at once with `python scripts/complete_phase1.py`.
 - On machines with restricted folders, set `MPLCONFIGDIR` and `XDG_CACHE_HOME` to writable folders.
 
 Full completion audit: [reports/phase1_completion_verification.md](reports/phase1_completion_verification.md)
+
+## Phase 2 (deep learning)
+
+Phase 2 (graph attention and diffusion forecasting, simulated signal control) is planned in [`reports/phase2_plan.md`](reports/phase2_plan.md). Phase 1 files stay frozen; Phase 2 code lives under `src/phase2/`, `configs/phase2/`, and `reports/phase2/`. Core pipeline usage: [`reports/phase2/pipeline.md`](reports/phase2/pipeline.md). Phase 2 tests: `python -m unittest discover -s tests -p "test_phase2_*.py"` (use `.phase2-venv`, see `requirements-phase2.txt`).

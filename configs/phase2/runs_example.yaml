@@ -1,0 +1,23 @@
+# Example run file (schema: reports/phase2_plan.md section 4.6). NOT a project result.
+# Exercises the whole pipeline with parameter-free and tiny dummy models:
+#   python -m src.phase2.cli smoke --runs configs/phase2/runs_example.yaml
+#   python -m src.phase2.cli all   --runs configs/phase2/runs_example.yaml --subset 0.05
+name: example
+train: {lr: 0.003, weight_decay: 0.0, batch_size: 64, epochs: 3, patience: 2,
+        grad_clip: 5.0, max_minutes: 5, scheduler: plateau}
+groups:
+  # Parameter-free reference: reproduces Phase 1 persistence (parity target).
+  - final:
+      - {model_id: last_value, model: last_value, graph: identity, params: {}, seeds: [42]}
+
+  # Tiny GRU with / without one round of neighbour averaging, tuned on validation only.
+  - search:
+      model: dummy_gru
+      graph: bidirectional
+      max_minutes: 2
+      candidates:
+        - {hidden: 8, mix: true}
+        - {hidden: 16, mix: true}
+    final:
+      - {model_id: dummy_gru,          model: dummy_gru, graph: bidirectional, params: from_search, seeds: [42, 43]}
+      - {model_id: dummy_gru_identity, model: dummy_gru, graph: identity,      params: from_search, seeds: [42]}

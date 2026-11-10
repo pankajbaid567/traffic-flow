@@ -1,0 +1,17 @@
+# Phase 2 (deep learning). Python 3.10+ (Colab) and 3.12 (local) are supported.
+# Does not replace requirements.txt; Phase 1 files stay untouched.
+# On Colab, torch is preinstalled; pip leaves a satisfying version alone.
+torch>=2.2
+numpy>=1.26.4,<3
+pandas>=2.2.2,<4
+pyarrow>=15   # no upper bound: Colab preinstalls a newer pyarrow that other Colab packages require
+PyYAML>=6.0.1,<7
+tables>=3.9.2,<4
+scikit-learn>=1.4,<2
+matplotlib>=3.8.4,<4
+networkx>=3.2,<4
+tqdm>=4.66
+nbformat>=5.9.2,<6
+
+# Optional (Member 5 slides). Install separately if wanted:
+#   pip install python-pptx
