@@ -57,8 +57,19 @@ Outputs: `predictions/<id>/seed<S>_{val,test}.npz` (`pred [n,4,207]` source unit
 | M3 mps | heavier | 1.2 | 0.4 min | 916 MB (+1.1 GB driver) |
 | Colab cpu (2 vCPU) | small | 2.8 | 0.9 min | 806 MB |
 | Colab cpu (2 vCPU) | heavier | 18.6 | 6.2 min | 1,043 MB |
+| Colab T4 (cuda) | small | 0.1 | 0.1 min | 1,653 MB + 346 MB GPU |
+| Colab T4 (cuda) | heavier | 0.4 | 0.1 min | 1,654 MB + 556 MB GPU |
 
-These are a **lower bound** for GAT and DCRNN, which do far more work per batch. Colab GPU speed is **not measured** (no T4 could be allocated, see the report). Re-measure with `python scripts/phase2_measure_speed.py --devices cuda` once a GPU is available, and with the real models' `smoke`/first epoch.
+These are a **lower bound** for GAT and DCRNN, which do far more work per batch; the dummy models barely load a T4. Re-measure with the real models' `smoke` and first epoch before fixing the time caps.
+
+**Full-scale runs of the example file** (`runs_example.yaml`, complete data, 3 epochs per model; tiny dummy models, not project results):
+- M3 MPS: 128 s end to end (search of 2 candidates, then 4 final runs), about 6-8 s per epoch, 786 MB peak RSS.
+- Colab T4: 45 s for the same run. Validation MAEs agree with the MPS run (for example 3.4434, 3.1432), so MPS and CUDA give the same results here.
+- Exported `last_value` files (23,967 / 3,416 / 6,844 origins) reproduce Phase 1 persistence for every horizon and both splits: identical valid counts, MAE and RMSE to 4 decimals (test 5 min: n 1,245,052, MAE 2.8138, RMSE 4.6266).
+
+**Crash test** (real process, full data, MPS): training was stopped with `kill -9` after 3 checkpointed epochs; re-running the same command printed `resumed after epoch 3 (1.2 min used)`, trained epochs 4-8, kept a consistent 8-line `epochs.jsonl`, carried the elapsed time over and wrote the predictions. This is what makes "press Run all again after a Colab disconnect" safe.
+
+**Colab notes:** Colab runs Python 3.13. The repository clones without a token (it is public), so the notebook clone cell works as written. Free-tier GPU sessions can be reclaimed by Google after some minutes (one session was lost mid-work, another T4 request timed out twice); this is why every epoch is checkpointed to Drive. Scripted use of the `colab` CLI: `colab exec --timeout 1200 -f script.py` (default timeout is 30 s), create the file before the command that uses it, and always `colab stop`.
 
 ## Memory notes (8 GB M3)
 Feature tensor 199 MB; a batch of 32 is 12 x 207 x 7 floats per sample (negligible). A model with `[B, heads, N, N]` attention at batch 32 and 4 heads is about 22 MB per layer. Keep `eval_batch_size` equal to `batch_size` unless you have checked memory.
