@@ -1,0 +1,44 @@
+# Phase 2 DCRNN Run File (schema: reports/phase2_plan.md section 4.6).
+# Owner: Member 3 (phase2/m3-dcrnn-controls).
+#
+# Commands:
+#   python -m src.phase2.cli smoke --runs configs/phase2/runs_dcrnn.yaml
+#   python -m src.phase2.cli search --runs configs/phase2/runs_dcrnn.yaml
+#   python -m src.phase2.cli pick --runs configs/phase2/runs_dcrnn.yaml
+#   python -m src.phase2.cli final --runs configs/phase2/runs_dcrnn.yaml
+#   python -m src.phase2.cli all --runs configs/phase2/runs_dcrnn.yaml
+name: dcrnn
+train:
+  lr: 0.001
+  weight_decay: 0.0
+  batch_size: 32
+  epochs: 60
+  patience: 8
+  grad_clip: 5.0
+  max_minutes: 50
+  scheduler: plateau
+
+groups:
+  - search:
+      model: dcrnn
+      graph: given
+      max_minutes: 30
+      candidates: # Exactly 4 candidates per protocol
+        - {hidden: 32, layers: 1, K: 1, dropout: 0.0}
+        - {hidden: 32, layers: 1, K: 2, dropout: 0.0}
+        - {hidden: 64, layers: 1, K: 2, dropout: 0.1}
+        - {hidden: 32, layers: 2, K: 2, dropout: 0.1}
+    final:
+      # Main DCRNN model on the directed road graph (computes forward & reverse supports)
+      - model_id: dcrnn
+        model: dcrnn
+        graph: given
+        params: from_search
+        seeds: [42, 43, 44]
+
+      # Architecture control: DCRNN on identity graph
+      - model_id: dcrnn_identity
+        model: dcrnn
+        graph: identity
+        params: from_search
+        seeds: [42]

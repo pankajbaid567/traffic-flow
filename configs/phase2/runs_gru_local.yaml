@@ -1,0 +1,37 @@
+# Phase 2 GRU Local Run File (schema: reports/phase2_plan.md section 4.6).
+# Owner: Member 3 (phase2/m3-dcrnn-controls).
+#
+# Commands:
+#   python -m src.phase2.cli smoke --runs configs/phase2/runs_gru_local.yaml
+#   python -m src.phase2.cli search --runs configs/phase2/runs_gru_local.yaml
+#   python -m src.phase2.cli pick --runs configs/phase2/runs_gru_local.yaml
+#   python -m src.phase2.cli final --runs configs/phase2/runs_gru_local.yaml
+#   python -m src.phase2.cli all --runs configs/phase2/runs_gru_local.yaml
+name: gru_local
+train:
+  lr: 0.001
+  weight_decay: 0.0
+  batch_size: 64
+  epochs: 60
+  patience: 8
+  grad_clip: 5.0
+  max_minutes: 30
+  scheduler: plateau
+
+groups:
+  - search:
+      model: gru_local
+      graph: identity
+      max_minutes: 15
+      candidates: # Exactly 4 candidates per protocol
+        - {hidden: 32, layers: 1, dropout: 0.0}
+        - {hidden: 64, layers: 1, dropout: 0.0}
+        - {hidden: 32, layers: 2, dropout: 0.1}
+        - {hidden: 64, layers: 2, dropout: 0.2}
+    final:
+      # Non-graph deep control model: shared per-sensor GRU
+      - model_id: gru_local
+        model: gru_local
+        graph: identity
+        params: from_search
+        seeds: [42, 43, 44]
