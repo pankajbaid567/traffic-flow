@@ -182,9 +182,19 @@ def main() -> int:
     origin_ns = data["origin_ns"]
 
     # Directed graph for upstream/downstream distinction
+    # load_graph returns a torch.Tensor; convert to numpy so that NumPy
+    # masks inside compute_attention_stats work without type errors.
     adj_directed = load_graph("given")
+    if hasattr(adj_directed, "numpy"):
+        adj_directed = adj_directed.numpy()
 
-    df = compute_attention_stats(attn, origin_ns, adj_directed)
+    # Use sensor IDs stored in the npz archive when available so that
+    # CSV rows carry meaningful labels instead of stringified indices.
+    sensor_ids: list[str] | None = None
+    if "sensor_ids" in data:
+        sensor_ids = [str(s) for s in data["sensor_ids"].tolist()]
+
+    df = compute_attention_stats(attn, origin_ns, adj_directed, sensor_ids=sensor_ids)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(args.out, index=False)
     print(f"Attention stats saved to {args.out} ({len(df)} rows).")
