@@ -100,3 +100,4 @@ Because METR-LA provides loop detector speed telemetry without vehicle counts or
 3. **Control Architecture Hyperparameters**: Controls (`gat_identity`, `dcrnn_identity`, `gat_shuffled`) inherit hyperparameter configurations optimized for the real graph (`params: from_search`). This is a deliberate, clean ablation design that may slightly underestimate control performance.
 4. **No Historical Average Channel for Deep Models**: Deep models take raw past speeds and time encodings (sin/cos of hour and day-of-week), but do not receive explicit Historical Average feature lookup columns. Deep vs. `xgboost_ha` comparisons therefore reflect feature differences in addition to model architectures.
 5. **Single Chronological Partition**: All evaluations reflect a single 4-month continuous period on METR-LA (March–June 2012). Intervals quantify uncertainty over this specific held-out window and do not generalize to other seasons or metropolitan networks.
+

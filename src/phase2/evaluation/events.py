@@ -168,3 +168,4 @@ def compute_stratified_slices(
     reg_scores = region_scores(sensor_scores_df, sensors_meta)
 
     return merged_sensor_scores, reg_scores
+
