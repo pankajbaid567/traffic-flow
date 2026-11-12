@@ -86,8 +86,8 @@ The best configuration selected by `src.phase2.cli pick` (lowest mean validation
 - On Google Colab Nvidia T4 (CUDA), batched matrix multiplications are ~3–4x faster than M3 MPS.
 - Expected full epoch on T4: ~6–8 s per epoch.
 - Over 60 epochs with early stopping (patience 8; typical convergence around 25–35 epochs):
-  - **Search candidate run**: ~3.5 to 5 minutes per candidate.
-  - **Total search (4 candidates)**: ~15 to 20 minutes (fits comfortably inside the 20-minute cap).
+  - **Search candidate run**: ~3.5 to 5 minutes per candidate (the CLI `--time-limit` cap applies **per candidate**, not per total search).
+  - **Total search (4 candidates, sequential)**: 4 × ~3.5–5 min = **~14 to 20 minutes total** (each candidate may use up to the per-candidate cap independently).
   - **Final runs (3 seeds gat + 3 seeds gat_identity + 1 seed gat_shuffled = 7 runs)**: ~30 to 45 minutes total.
   - Worst-case total on Colab T4: ~1.5 to 2.5 hours across all runs.
 
