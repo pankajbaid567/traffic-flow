@@ -318,16 +318,68 @@ No deadline was given, so this is in working days from the day the prompts are l
 Paste exactly one block into your own agent session. Each begins with the same ground rules, so the block is self-contained apart from this plan file.
 
 ### 8.1 Member 1: core pipeline, trainer, CLI, Colab runner
-(See prompt text in `reports/phase2_plan.md` or Section 8.1)
+
+```text
+Work on branch `phase2/m1-core`. Read `reports/phase2_plan.md` sections 2–4 first.
+Rules: Phase 1 is frozen (never edit Phase 1 files except appending `.gitignore`, appending `README.md`, and adding `requirements-phase2.txt`).
+Deliverables:
+1. `src/phase2/{__init__,data,graph,registry,train,cli}.py` and `src/phase2/models/__init__.py` implementing the Section 4 contract (causal fill + train-only scaler, 5 graph variants in `load_graph`, `@register_model` auto-import, per-epoch checkpointing + wall-clock cap, masked MAE loss in source speed units, `smoke` / `search` / `pick` / `final` CLI commands).
+2. `scripts/phase2_check_phase1_frozen.py` verifying zero Phase 1 modifications since tag `phase1-final`.
+3. `notebooks/phase2_colab_train.ipynb` for Colab T4 training with Drive checkpointing and resume.
+4. `tests/test_phase2_core.py` covering persistence parity, data leakage, graph direction/variants, and CLI smoke run.
+Verify with `python -m unittest discover -s tests -p "test_phase2_*.py" -v` and `python scripts/phase2_check_phase1_frozen.py`.
+```
 
 ### 8.2 Member 2: Graph Attention Network
-(See prompt text in `reports/phase2_plan.md` or Section 8.2)
+
+```text
+Work on branch `phase2/m2-gat`. Read `reports/phase2_plan.md` sections 2–4 first.
+Rules: Phase 1 is frozen; pure PyTorch only (no PyTorch Geometric); never write test predictions during search.
+Deliverables:
+1. `src/phase2/models/gat.py` registered as `"gat"` (`needs_graph = True`), with shared GRU/Conv temporal encoder, masked multi-head attention (`A[i,j] > 0` + self-loops, `-1e9` mask), residual head, and `attention_maps(x, adj)` returning `[B, heads, N, N]` per layer.
+2. `configs/phase2/runs_gat.yaml` with 4 search candidates (`seed: 42`, `bidirectional`) and final runs (`gat` x3 seeds, `gat_identity` x3 seeds, `gat_shuffled` x1 seed).
+3. `scripts/phase2_gat_attention_stats.py` computing per-sensor entropy and self/upstream/downstream attention mass split by peak vs off-peak (`data/metadata/phase2/attention_stats.csv`).
+4. `reports/phase2/fact_sheet_gat.md` documenting architecture, exact parameter counts, and per-candidate runtime estimates.
+5. `tests/test_phase2_gat.py` covering registration, shape/finiteness, softmax masking, permutation equivariance, identity-graph isolation, connected-neighbour influence, overfit, exact parameter counts, and attention stats.
+Verify with `python -m unittest discover -s tests -p "test_phase2_*.py" -v` and `python scripts/phase2_check_phase1_frozen.py`.
+```
 
 ### 8.3 Member 3: DCRNN and non-graph deep controls
-(See prompt text in `reports/phase2_plan.md` or Section 8.3)
+
+```text
+Work on branch `phase2/m3-dcrnn-controls`. Read `reports/phase2_plan.md` sections 2–4 first.
+Rules: Phase 1 is frozen; pure PyTorch only; never edit shared registry files (use `@register_model`).
+Deliverables:
+1. `src/phase2/models/controls.py` implementing `gru_local` (`needs_graph = False`, shared per-sensor GRU with zero spatial mixing).
+2. `src/phase2/models/dcrnn.py` implementing `dcrnn` (`needs_graph = True`, DiffusionConv with K-hop forward `D_out^-1 A` and reverse `D_in^-1 A^T` random-walk supports + DCGRU encoder-decoder).
+3. `configs/phase2/runs_gru_local.yaml` (4 search candidates + `gru_local` x3 seeds) and `configs/phase2/runs_dcrnn.yaml` (4 search candidates + `dcrnn` x3 seeds + `dcrnn_identity` x1 seed).
+4. `reports/phase2/fact_sheet_dcrnn_controls.md` with architecture, parameter counts, and runtime caps.
+5. `tests/test_phase2_controls.py` and `tests/test_phase2_dcrnn.py` verifying neighbour independence (`gru_local`), diffusion supports, equivariance, and overfit.
+Verify with `python -m unittest discover -s tests -p "test_phase2_*.py" -v` and `python scripts/phase2_check_phase1_frozen.py`.
+```
 
 ### 8.4 Member 4: evaluation, statistics, maps, error analysis
-(See prompt text in `reports/phase2_plan.md` or Section 8.4)
+
+```text
+Work on branch `phase2/m4-evaluation`. Read `reports/phase2_plan.md` sections 2, 4, and 5 first.
+Rules: Phase 1 is frozen; reuse Phase 1 `compute_metrics`, `temporal_masks`, `paired_daily_bootstrap`, `region_scores`, and `spatial_mapping` without modifying Phase 1 files.
+Deliverables:
+1. `src/phase2/evaluation/` (`scoring.py`, `bootstrap.py`, `hypotheses.py`) for unified MAE/RMSE/MAPE scoring (overall and peak/off-peak), paired 2-day block bootstrap (`2000` resamples, seed `42`), and H1–H5 hypothesis verdicts.
+2. `src/phase2/viz/` for horizon MAE comparisons, peak vs off-peak breakdowns, attention maps, and sensor error maps saved to `figures/phase2/`.
+3. `scripts/phase2_eval_all.py` writing tracked summary CSVs to `data/metadata/phase2/{metrics,bootstrap,hypotheses}.csv`.
+4. `notebooks/phase2_error_analysis.ipynb` and `reports/phase2/fact_sheet_evaluation.md`.
+5. `tests/test_phase2_evaluation.py` including a Phase 1 parity check against saved Phase 1 predictions.
+Verify with `python -m unittest discover -s tests -p "test_phase2_*.py" -v` and `python scripts/phase2_check_phase1_frozen.py`.
+```
 
 ### 8.5 Member 5: simulated signal control, paper, slides, QA
-(See prompt text in `reports/phase2_plan.md` or Section 8.5)
+
+```text
+Work on branch `phase2/m5-signal-paper`. Read `reports/phase2_plan.md` sections 2, 4, and 5 first.
+Rules: Phase 1 is frozen; label every signal experiment and congestion metric as simulated/proxy; never claim live traffic control.
+Deliverables:
+1. `src/phase2/signal_sim/` implementing a reproducible Python simulated signal-policy evaluation driven by Phase 2 forecasts, outputting tracked CSV/JSON to `data/metadata/phase2/` and figures to `figures/phase2/`.
+2. `reports/phase2/` and `reports/paper_phase2/` assembling the Phase 2 technical report / IEEE paper and presentation slides using M2/M3/M4 fact sheets and M4 evaluation tables.
+3. Claims/wording QA check verifying "source speed units", "stored clock", "proxy congestion", and "simulated" terminology, plus `tests/test_phase2_signal_sim.py`.
+Verify with `python -m unittest discover -s tests -p "test_phase2_*.py" -v` and `python scripts/phase2_check_phase1_frozen.py`.
+```
