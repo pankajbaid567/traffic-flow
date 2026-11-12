@@ -235,26 +235,64 @@ class GATModelTest(unittest.TestCase):
             )
 
     def test_attention_stats_synthetic_computation(self) -> None:
-        """Verify attention stats computation runs cleanly on synthetic attention maps."""
+        """Verify attention stats with hand-computable expected values.
+
+        Uses a 2-node uniform attention matrix so entropy and mass values
+        can be derived analytically and asserted exactly (within float tolerance).
+        """
+        import math
         import numpy as np
         import pandas as pd
         from scripts.phase2_gat_attention_stats import compute_attention_stats
 
-        b, layers, heads, n = 4, 1, 2, 10
-        raw_logits = np.random.randn(b, layers, heads, n, n)
-        exp = np.exp(raw_logits - raw_logits.max(axis=-1, keepdims=True))
-        attn = exp / exp.sum(axis=-1, keepdims=True)
-        origin_ns = pd.date_range("2012-06-01 08:00", periods=b, freq="3h").asi8
-        adj = (np.random.rand(n, n) > 0.7).astype(np.float32)
-        np.fill_diagonal(adj, 1.0)
+        # --- hand-computable 2-node case ---
+        # Attention matrix: each row is [0.6, 0.4] (uniform across both nodes)
+        n = 2
+        p_self, p_other = 0.6, 0.4
+        # Shape: [B=1, layers=1, heads=1, N=2, N=2]
+        attn_row = np.array([[p_self, p_other], [p_other, p_self]], dtype=np.float32)
+        attn = attn_row[np.newaxis, np.newaxis, np.newaxis, :, :]  # [1,1,1,2,2]
+
+        # One origin in peak hours (8 AM)
+        origin_ns = pd.to_datetime(["2012-06-01 08:00"]).asi8
+
+        # Directed graph: node 0 -> node 1 (downstream), no reverse edge
+        # adj[i,j]>0 means j is downstream of i
+        adj = np.array([[1.0, 1.0], [0.0, 1.0]], dtype=np.float32)
 
         df = compute_attention_stats(attn, origin_ns, adj)
-        self.assertFalse(df.empty)
-        self.assertIn("entropy", df.columns)
-        self.assertIn("mass_self", df.columns)
-        self.assertIn("mass_downstream", df.columns)
-        self.assertIn("mass_upstream", df.columns)
-        self.assertEqual(len(df), n * 3)  # all, peak, off_peak
+
+        # Expected entropy for a [0.6, 0.4] distribution:
+        eps = 1e-12
+        expected_entropy = -(p_self * math.log(p_self + eps) + p_other * math.log(p_other + eps))
+
+        # Filter to 'all' period for sensor 0
+        row0 = df[(df["sensor_idx"] == 0) & (df["period"] == "all")].iloc[0]
+        self.assertAlmostEqual(row0["entropy"], expected_entropy, places=5,
+                               msg="Entropy mismatch for sensor 0")
+        self.assertAlmostEqual(row0["mass_self"], p_self, places=5,
+                               msg="mass_self mismatch for sensor 0")
+        # Node 1 is downstream of node 0: attention mass on downstream = p_other
+        self.assertAlmostEqual(row0["mass_downstream"], p_other, places=5,
+                               msg="mass_downstream mismatch for sensor 0")
+        # Node 1 is NOT upstream of node 0
+        self.assertAlmostEqual(row0["mass_upstream"], 0.0, places=5,
+                               msg="mass_upstream should be 0.0 for sensor 0")
+
+        # Also verify structural properties on the full random case
+        b2, layers2, heads2, n2 = 4, 1, 2, 10
+        raw2 = np.random.randn(b2, layers2, heads2, n2, n2)
+        exp2 = np.exp(raw2 - raw2.max(axis=-1, keepdims=True))
+        attn2 = exp2 / exp2.sum(axis=-1, keepdims=True)
+        origin_ns2 = pd.date_range("2012-06-01 08:00", periods=b2, freq="3h").asi8
+        adj2 = (np.random.rand(n2, n2) > 0.7).astype(np.float32)
+        np.fill_diagonal(adj2, 1.0)
+
+        df2 = compute_attention_stats(attn2, origin_ns2, adj2)
+        self.assertFalse(df2.empty)
+        for col in ("entropy", "mass_self", "mass_downstream", "mass_upstream"):
+            self.assertIn(col, df2.columns)
+        self.assertEqual(len(df2), n2 * 3)  # all, peak, off_peak
 
 
 if __name__ == "__main__":
