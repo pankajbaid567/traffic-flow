@@ -211,18 +211,28 @@ class GATModelTest(unittest.TestCase):
         )
 
     def test_parameter_counts(self) -> None:
-        """Inspect and print parameter counts for various configurations."""
-        cfgs = [
-            {"hidden": 32, "heads": 2, "layers": 1, "temporal_encoder": "gru"},
-            {"hidden": 64, "heads": 2, "layers": 1, "temporal_encoder": "gru"},
-            {"hidden": 32, "heads": 4, "layers": 2, "temporal_encoder": "gru"},
-            {"hidden": 32, "heads": 2, "layers": 1, "temporal_encoder": "conv"},
-        ]
-        for cfg in cfgs:
+        """Parameter counts must match the fact sheet (reports/phase2/fact_sheet_gat.md).
+
+        Exact values act as regression guards: if model internals change and shift
+        the count, this test immediately flags the discrepancy.
+        """
+        # (hidden, heads, layers, temporal_encoder) -> expected param count
+        expected_counts = {
+            (32, 2, 1, "gru"): 6276,
+            (64, 2, 1, "gru"): 22788,
+            (32, 4, 2, "gru"): 7428,
+            (32, 2, 1, "conv"): 6148,
+        }
+        for (hidden, heads, layers, enc), expected in expected_counts.items():
+            cfg = {"hidden": hidden, "heads": heads, "layers": layers, "temporal_encoder": enc}
             model = GATModel(num_nodes=207, **cfg)
-            param_count = sum(p.numel() for p in model.parameters() if p.requires_grad)
-            self.assertGreater(param_count, 500)
-            print(f"[GAT param count] cfg={cfg} -> {param_count:,} parameters")
+            actual = sum(p.numel() for p in model.parameters() if p.requires_grad)
+            print(f"[GAT param count] cfg={cfg} -> {actual:,} parameters (expected {expected:,})")
+            self.assertEqual(
+                actual,
+                expected,
+                f"Parameter count mismatch for cfg={cfg}: got {actual}, expected {expected}",
+            )
 
     def test_attention_stats_synthetic_computation(self) -> None:
         """Verify attention stats computation runs cleanly on synthetic attention maps."""
