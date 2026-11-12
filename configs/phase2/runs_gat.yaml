@@ -1,0 +1,63 @@
+# Phase 2 GAT Run File (schema: reports/phase2_plan.md section 4.6).
+# Owner: Member 2 (phase2/m2-gat).
+#
+# Commands:
+#   python -m src.phase2.cli smoke --runs configs/phase2/runs_gat.yaml
+#   python -m src.phase2.cli search --runs configs/phase2/runs_gat.yaml
+#   python -m src.phase2.cli pick --runs configs/phase2/runs_gat.yaml
+#   python -m src.phase2.cli final --runs configs/phase2/runs_gat.yaml
+#   python -m src.phase2.cli all --runs configs/phase2/runs_gat.yaml
+name: gat
+train:
+  lr: 0.001
+  weight_decay: 0.0
+  batch_size: 32
+  epochs: 60
+  patience: 8
+  grad_clip: 5.0
+  max_minutes: 40
+  scheduler: plateau
+
+groups:
+  - search:
+      model: gat
+      graph: bidirectional
+      max_minutes: 20
+      candidates: # Exactly 4 candidates per protocol
+        - {hidden: 32, heads: 2, layers: 1, dropout: 0.1, temporal_encoder: gru}
+        - {hidden: 64, heads: 2, layers: 1, dropout: 0.1, temporal_encoder: gru}
+        - {hidden: 32, heads: 4, layers: 2, dropout: 0.2, temporal_encoder: gru}
+        - {hidden: 32, heads: 2, layers: 1, dropout: 0.1, temporal_encoder: conv}
+    final:
+      # Main Graph Attention model on the bidirectional sensor graph
+      - model_id: gat
+        model: gat
+        graph: bidirectional
+        params: from_search
+        seeds: [42, 43, 44]
+
+      # Architecture control: identical GAT model with Identity graph (self-loops only)
+      - model_id: gat_identity
+        model: gat
+        graph: identity
+        params: from_search
+        seeds: [42, 43, 44]
+
+      # Graph topology control: identical GAT model with shuffled node adjacency
+      - model_id: gat_shuffled
+        model: gat
+        graph: shuffled
+        params: from_search
+        seeds: [42]
+
+      # Optional controls (uncomment if time permits):
+      # - model_id: gat_random_matched
+      #   model: gat
+      #   graph: random_matched
+      #   params: from_search
+      #   seeds: [42]
+      # - model_id: gat_given
+      #   model: gat
+      #   graph: given
+      #   params: from_search
+      #   seeds: [42]
