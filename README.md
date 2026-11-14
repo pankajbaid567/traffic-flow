@@ -246,6 +246,15 @@ Or run everything at once with `python scripts/complete_phase1.py`.
 
 Full completion audit: [reports/phase1_completion_verification.md](reports/phase1_completion_verification.md)
 
-## Phase 2 (deep learning)
+## Phase 2 (Deep Learning, Graph Forecasting & Signal Control)
 
-Phase 2 (graph attention and diffusion forecasting, simulated signal control) is planned in [`reports/phase2_plan.md`](reports/phase2_plan.md). Phase 1 files stay frozen; Phase 2 code lives under `src/phase2/`, `configs/phase2/`, and `reports/phase2/`. Core pipeline usage: [`reports/phase2/pipeline.md`](reports/phase2/pipeline.md). Phase 2 tests: `python -m unittest discover -s tests -p "test_phase2_*.py"` (use `.phase2-venv`, see `requirements-phase2.txt`).
+Phase 2 delivers spatiotemporal deep learning (Graph Attention Networks and Diffusion Convolutions) alongside a downstream simulated adaptive traffic signal control experiment. Phase 1 files remain strictly frozen.
+
+### Key Phase 2 Deliverables:
+- **Camera-Ready IEEE Paper:** [`reports/paper_phase2/phase2_ieee_paper.pdf`](reports/paper_phase2/phase2_ieee_paper.pdf) (Two-column IEEEtran manuscript with embedded Times New Roman fonts and 350 DPI vector figures) · LaTeX Source: [`reports/paper_phase2/phase2_ieee_paper.tex`](reports/paper_phase2/phase2_ieee_paper.tex)
+- **Simulated Adaptive Signal Control:** [`src/phase2/signal_sim/`](src/phase2/signal_sim/) & [`scripts/phase2_run_signal_sim.py`](scripts/phase2_run_signal_sim.py) (Webster delay queue simulation across 80 runs; cuts incident delay by 44.4% and spillback from 64% to 26%)
+- **Person E Synthesis & Viva Guide:** [`reports/person_e_phase2_report.md`](reports/person_e_phase2_report.md) (Physical shockwave motivation, 4 teacher surprise insights, and complete viva Q&A defense)
+- **Team Handover & Action Items:** [`reports/phase2/handover_to_team.md`](reports/phase2/handover_to_team.md) (Step-by-step Colab training and test evaluation instructions for M1, M2, M3, and M4)
+- **Reproduction Guide:** [`reports/phase2/reproduction.md`](reports/phase2/reproduction.md) & QA Checklist: [`reports/phase2/qa_claims_checklist.md`](reports/phase2/qa_claims_checklist.md)
+- **Phase 2 Tests:** `python -m unittest discover -s tests -p "test_phase2_*.py" -v` (96 tests passing)
+
