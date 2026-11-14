@@ -1,0 +1,15 @@
+{
+  "status": "passed",
+  "paper_title": "Spatiotemporal Graph Attention and Diffusion Forecasting on METR-LA",
+  "authors_count": 5,
+  "sections_count": 11,
+  "tables_count": 4,
+  "figures_count": 5,
+  "references_count": 8,
+  "claims_compliance": {
+    "speed_units": "source speed units; physical units unverified",
+    "timezone": "stored clock; UTC unverified",
+    "signal_control": "strictly simulated; no physical actuation claim",
+    "spatial_freeways": "coordinate proxy regions; no named freeways claimed"
+  }
+}
