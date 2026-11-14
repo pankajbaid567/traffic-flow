@@ -62,7 +62,16 @@ def compute_attention_stats(
     is_neighbour = is_downstream | is_upstream
 
     # Classify origins into peak vs off-peak
-    timestamps = pd.to_datetime(origin_ns, unit="ns")
+    # Support nanoseconds, microseconds, or standard datetime units
+    median_val = float(np.median(origin_ns)) if len(origin_ns) > 0 else 0.0
+    if median_val > 1e16:
+        timestamps = pd.to_datetime(origin_ns, unit="ns")
+    elif median_val > 1e13:
+        timestamps = pd.to_datetime(origin_ns, unit="us")
+    elif median_val > 1e10:
+        timestamps = pd.to_datetime(origin_ns, unit="ms")
+    else:
+        timestamps = pd.to_datetime(origin_ns)
     masks = temporal_masks(timestamps)
 
     rows = []
