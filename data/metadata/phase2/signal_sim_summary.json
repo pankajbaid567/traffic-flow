@@ -1,0 +1,131 @@
+{
+  "metadata": {
+    "evaluation_type": "simulated_signal_control",
+    "cycle_length_s": 90.0,
+    "num_scenarios": 4,
+    "num_seeds": 5,
+    "total_runs": 80
+  },
+  "scenarios": {
+    "morning_peak": {
+      "fixed_pretimed": {
+        "mean_delay_s": 248.87,
+        "std_delay_s": 1.95,
+        "spillback_rate_pct": 76.5,
+        "throughput_vph": 1302.8,
+        "fuel_consumption_proxy": 406.99
+      },
+      "reactive_actuated": {
+        "mean_delay_s": 243.3,
+        "std_delay_s": 2.63,
+        "spillback_rate_pct": 74.33,
+        "throughput_vph": 1600.8,
+        "fuel_consumption_proxy": 474.98
+      },
+      "predictive_local_p1": {
+        "mean_delay_s": 246.0,
+        "std_delay_s": 3.08,
+        "spillback_rate_pct": 75.67,
+        "throughput_vph": 1555.9,
+        "fuel_consumption_proxy": 468.2
+      },
+      "predictive_graph_p2": {
+        "mean_delay_s": 205.97,
+        "std_delay_s": 10.2,
+        "spillback_rate_pct": 62.5,
+        "throughput_vph": 1931.1,
+        "fuel_consumption_proxy": 481.83
+      }
+    },
+    "evening_peak": {
+      "fixed_pretimed": {
+        "mean_delay_s": 268.99,
+        "std_delay_s": 3.4,
+        "spillback_rate_pct": 80.33,
+        "throughput_vph": 1370.4,
+        "fuel_consumption_proxy": 473.63
+      },
+      "reactive_actuated": {
+        "mean_delay_s": 256.26,
+        "std_delay_s": 5.83,
+        "spillback_rate_pct": 77.67,
+        "throughput_vph": 1847.2,
+        "fuel_consumption_proxy": 582.8
+      },
+      "predictive_local_p1": {
+        "mean_delay_s": 261.73,
+        "std_delay_s": 3.49,
+        "spillback_rate_pct": 79.5,
+        "throughput_vph": 1799.4,
+        "fuel_consumption_proxy": 581.05
+      },
+      "predictive_graph_p2": {
+        "mean_delay_s": 248.64,
+        "std_delay_s": 3.88,
+        "spillback_rate_pct": 74.17,
+        "throughput_vph": 2148.0,
+        "fuel_consumption_proxy": 644.73
+      }
+    },
+    "shockwave_incident": {
+      "fixed_pretimed": {
+        "mean_delay_s": 202.63,
+        "std_delay_s": 1.24,
+        "spillback_rate_pct": 64.0,
+        "throughput_vph": 1113.6,
+        "fuel_consumption_proxy": 291.61
+      },
+      "reactive_actuated": {
+        "mean_delay_s": 141.94,
+        "std_delay_s": 3.38,
+        "spillback_rate_pct": 35.16,
+        "throughput_vph": 1487.8,
+        "fuel_consumption_proxy": 263.6
+      },
+      "predictive_local_p1": {
+        "mean_delay_s": 152.44,
+        "std_delay_s": 7.03,
+        "spillback_rate_pct": 47.83,
+        "throughput_vph": 1505.7,
+        "fuel_consumption_proxy": 290.53
+      },
+      "predictive_graph_p2": {
+        "mean_delay_s": 112.57,
+        "std_delay_s": 12.45,
+        "spillback_rate_pct": 26.0,
+        "throughput_vph": 1617.9,
+        "fuel_consumption_proxy": 232.74
+      }
+    },
+    "off_peak": {
+      "fixed_pretimed": {
+        "mean_delay_s": 27.28,
+        "std_delay_s": 0.28,
+        "spillback_rate_pct": 0.0,
+        "throughput_vph": 574.3,
+        "fuel_consumption_proxy": 28.47
+      },
+      "reactive_actuated": {
+        "mean_delay_s": 22.76,
+        "std_delay_s": 1.8,
+        "spillback_rate_pct": 0.0,
+        "throughput_vph": 586.3,
+        "fuel_consumption_proxy": 25.79
+      },
+      "predictive_local_p1": {
+        "mean_delay_s": 24.83,
+        "std_delay_s": 2.38,
+        "spillback_rate_pct": 0.0,
+        "throughput_vph": 583.5,
+        "fuel_consumption_proxy": 26.98
+      },
+      "predictive_graph_p2": {
+        "mean_delay_s": 22.84,
+        "std_delay_s": 3.08,
+        "spillback_rate_pct": 0.0,
+        "throughput_vph": 582.1,
+        "fuel_consumption_proxy": 25.85
+      }
+    }
+  }
+}
