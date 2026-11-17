@@ -135,8 +135,8 @@ def compute_stratified_slices(
     adj_path: Path | str = ROOT / "data" / "raw" / "adj_mx.pkl",
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Compute sensor_metrics.csv and region_metrics.csv stratified by regions and degree."""
-    import pickle
     from src.models.prediction_evaluation import region_scores
+    from src.phase2.common import load_graph_pickle
 
     sensors_meta = pd.read_csv(sensor_metadata_path, dtype={"sensor_id": str})
     sensors_meta["sensor_id"] = sensors_meta["sensor_id"].astype(str)
@@ -144,8 +144,7 @@ def compute_stratified_slices(
     # Calculate graph degree from adj_mx.pkl if available
     if Path(adj_path).is_file():
         try:
-            with open(adj_path, "rb") as f:
-                _, _, adj = pickle.load(f, encoding="latin1")
+            _, _, adj = load_graph_pickle(adj_path)
             # Adjacency has self-loops (diagonal = 1), subtract self loop for degree
             degrees = np.sum(adj > 0, axis=1) - 1
             sensors_meta["graph_degree"] = degrees

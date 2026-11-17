@@ -49,8 +49,8 @@ from typing import Callable
 import numpy as np
 import torch
 
-from src.data.load_data import load_graph_metadata, load_sensor_metadata
-from src.phase2.common import ROOT
+from src.data.load_data import load_sensor_metadata
+from src.phase2.common import ROOT, load_graph_pickle
 
 VARIANTS = ("given", "given_T", "bidirectional", "identity", "shuffled", "random_matched")
 _ADJ_CACHE: dict[str, np.ndarray] = {}
@@ -60,7 +60,7 @@ def load_adjacency(path: str | Path = ROOT / "data/raw/adj_mx.pkl", check_order:
     """Load the supplied adjacency as float32 ``[N, N]``; optionally check sensor order."""
     key = str(path)
     if key not in _ADJ_CACHE:
-        ids, _, adj = load_graph_metadata(path)
+        ids, _, adj = load_graph_pickle(path)
         adj = np.asarray(adj, dtype=np.float32)
         if adj.ndim != 2 or adj.shape[0] != adj.shape[1] or adj.shape[0] != len(ids):
             raise ValueError(f"adjacency must be square with one row per sensor id, got {adj.shape}, {len(ids)} ids")

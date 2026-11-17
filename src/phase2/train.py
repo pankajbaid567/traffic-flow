@@ -19,7 +19,9 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, fields
 import io
 import json
+import os
 from pathlib import Path
+import pickle
 import random
 import time
 from typing import Any, Callable
@@ -173,7 +175,7 @@ def predict(
 def _rng_state(device: torch.device) -> dict[str, Any]:
     state: dict[str, Any] = {
         "python": random.getstate(),
-        "numpy": np.random.get_state(),
+        "numpy": _numpy_rng_to_plain(np.random.get_state()),
         "torch": torch.get_rng_state(),
     }
     if torch.cuda.is_available():
@@ -186,9 +188,22 @@ def _rng_state(device: torch.device) -> dict[str, Any]:
     return state
 
 
+def _numpy_rng_to_plain(s: tuple) -> tuple:
+    # A tensor instead of an ndarray keeps checkpoints loadable with weights_only=True.
+    name, keys, pos, has_gauss, cached = s
+    return (str(name), torch.from_numpy(keys.astype(np.int64)), int(pos), int(has_gauss), float(cached))
+
+
+def _numpy_rng_from_plain(s: tuple) -> tuple:
+    name, keys, pos, has_gauss, cached = s
+    if isinstance(keys, torch.Tensor):
+        keys = keys.numpy()
+    return (name, np.asarray(keys).astype(np.uint32), pos, has_gauss, cached)
+
+
 def _restore_rng(state: dict[str, Any], device: torch.device) -> None:
     random.setstate(state["python"])
-    np.random.set_state(state["numpy"])
+    np.random.set_state(_numpy_rng_from_plain(state["numpy"]))
     torch.set_rng_state(state["torch"].cpu() if hasattr(state["torch"], "cpu") else state["torch"])
     if "cuda" in state and torch.cuda.is_available():
         torch.cuda.set_rng_state_all(state["cuda"])
@@ -215,7 +230,18 @@ def _make_scheduler(optimizer, cfg: TrainConfig):
 
 
 def _load_checkpoint(path: Path) -> dict[str, Any]:
-    return torch.load(path, map_location="cpu", weights_only=False)
+    # weights_only=True refuses pickled code, so a tampered checkpoint in the shared
+    # Drive folder cannot run anything. Checkpoints written before this change store
+    # the numpy RNG state as an ndarray; set PHASE2_TRUST_CHECKPOINTS=1 to load those.
+    try:
+        return torch.load(path, map_location="cpu", weights_only=True)
+    except pickle.UnpicklingError as exc:
+        if os.environ.get("PHASE2_TRUST_CHECKPOINTS") == "1":
+            return torch.load(path, map_location="cpu", weights_only=False)
+        raise RuntimeError(
+            f"{path} contains objects that are not plain tensors/containers and was not loaded. "
+            "If you created this file yourself, set PHASE2_TRUST_CHECKPOINTS=1 to load it."
+        ) from exc
 
 
 def fit(

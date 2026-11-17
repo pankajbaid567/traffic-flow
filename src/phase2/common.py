@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import pickle
 import random
 import subprocess
 import tempfile
@@ -100,6 +101,33 @@ def atomic_write_bytes(path: Path, data: bytes) -> None:
 
 def atomic_write_json(path: Path, obj: Any) -> None:
     atomic_write_bytes(path, (json.dumps(obj, indent=2, sort_keys=True, default=str) + "\n").encode())
+
+
+class _ArrayOnlyUnpickler(pickle.Unpickler):
+    """Unpickler that only rebuilds numpy arrays; any other global is refused."""
+
+    _ALLOWED = {
+        ("numpy", "ndarray"),
+        ("numpy", "dtype"),
+        ("numpy.core.multiarray", "_reconstruct"),
+        ("numpy._core.multiarray", "_reconstruct"),
+        ("_codecs", "encode"),  # protocol <= 2 pickles written by Python 3 store bytes this way
+    }
+
+    def find_class(self, module: str, name: str) -> Any:
+        if (module, name) in self._ALLOWED:
+            return super().find_class(module, name)
+        raise pickle.UnpicklingError(f"refusing to load {module}.{name} from a data pickle")
+
+
+def load_graph_pickle(path: str | Path) -> tuple[list[str], dict[str, int], np.ndarray]:
+    """Read ``adj_mx.pkl`` (ids, id_to_index, adj) without allowing pickled code to run."""
+    path = Path(path)
+    if not path.is_file():
+        raise FileNotFoundError(f"adjacency file not found: {path}")
+    with path.open("rb") as f:
+        ids, id_to_index, adj = _ArrayOnlyUnpickler(f, encoding="latin1").load()
+    return [str(i) for i in ids], {str(k): int(v) for k, v in id_to_index.items()}, np.asarray(adj)
 
 
 def atomic_torch_save(obj: Any, path: Path) -> None:
