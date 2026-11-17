@@ -72,13 +72,9 @@ print("inputs:", INPUTS, "| outputs:", OUT)
 '''
 
 CLONE = '''\
-import subprocess, shutil, zipfile
+import subprocess, shutil, zipfile, base64
 
 REPO_DIR = os.path.join(WORK, "traffic-flow-capstone")
-
-def sh(cmd, cwd=None, check=True):
-    print("$", cmd.replace(TOKEN, "***") if TOKEN else cmd)
-    return subprocess.run(cmd, shell=True, cwd=cwd, check=check, text=True)
 
 TOKEN = ""
 if IN_COLAB:
@@ -88,20 +84,48 @@ if IN_COLAB:
     except Exception:
         TOKEN = ""
 
+# The token goes to git through environment variables only (git >= 2.31), so it is
+# never part of a URL, a command line, .git/config, or an error message.
+GIT_ENV = dict(os.environ)
+if TOKEN:
+    basic = base64.b64encode(f"x-access-token:{TOKEN}".encode()).decode()
+    GIT_ENV.update({
+        "GIT_CONFIG_COUNT": "1",
+        "GIT_CONFIG_KEY_0": "http.https://github.com/.extraheader",
+        "GIT_CONFIG_VALUE_0": f"Authorization: Basic {basic}",
+    })
+
+def sh(cmd, cwd=None, check=True, timeout=300):
+    display_cmd = cmd.replace(TOKEN, "***") if TOKEN else cmd
+    print("$", display_cmd)
+    try:
+        return subprocess.run(cmd, shell=True, cwd=cwd, check=check, text=True,
+                              timeout=timeout, env=GIT_ENV)
+    except subprocess.CalledProcessError as e:
+        raise subprocess.CalledProcessError(e.returncode, display_cmd, e.output, e.stderr) from None
+    except subprocess.TimeoutExpired:
+        raise RuntimeError(f"Command timed out after {timeout}s: {display_cmd}") from None
+
+def safe_extract(zip_path, dest):
+    dest_real = os.path.realpath(dest)
+    with zipfile.ZipFile(zip_path) as z:
+        for name in z.namelist():
+            target = os.path.realpath(os.path.join(dest_real, name))
+            if os.path.commonpath([dest_real, target]) != dest_real:
+                raise RuntimeError(f"Unsafe path in {zip_path}: {name}")
+        z.extractall(dest_real)
+
 if USE_REPO_ZIP:
     if not os.path.isdir(REPO_DIR):
-        with zipfile.ZipFile(os.path.join(INPUTS, "repo.zip")) as z:
-            z.extractall(WORK)
+        safe_extract(os.path.join(INPUTS, "repo.zip"), WORK)
 else:
-    url = REPO_URL.replace("https://", f"https://{TOKEN}@") if TOKEN else REPO_URL
     if not os.path.isdir(os.path.join(REPO_DIR, ".git")):
-        sh(f"git clone --branch {BRANCH} {url} {REPO_DIR}")
+        sh(f"git clone --branch {BRANCH} {REPO_URL} {REPO_DIR}")
     else:   # re-run after a disconnect: just update
-        sh(f"git remote set-url origin {url}", cwd=REPO_DIR)
+        sh(f"git remote set-url origin {REPO_URL}", cwd=REPO_DIR)
         sh("git fetch origin", cwd=REPO_DIR)
         sh(f"git checkout {BRANCH}", cwd=REPO_DIR)
         sh(f"git pull --ff-only origin {BRANCH}", cwd=REPO_DIR)
-    sh("git remote set-url origin " + REPO_URL, cwd=REPO_DIR)   # do not keep the token in .git/config
 sh("git log --oneline -1", cwd=REPO_DIR)
 '''
 
