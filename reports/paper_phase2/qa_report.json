@@ -1,15 +1,41 @@
 {
-  "status": "passed",
+  "status": "results_from_evaluation_outputs",
+  "phase2_models_scored": [
+    "gru_local",
+    "gat_identity",
+    "gat_shuffled",
+    "dcrnn_identity",
+    "gat",
+    "dcrnn"
+  ],
+  "phase2_models_pending": [],
+  "hypothesis_verdicts": {
+    "H1": "supported",
+    "H2": "contradicted",
+    "H3": "supported",
+    "H4": "supported",
+    "H5": "descriptive_only",
+    "H0": "contradicted"
+  },
+  "phase1_parity": {
+    "rows_compared": 200,
+    "max_abs_mae_diff": 0.0,
+    "max_abs_rmse_diff": 3.552713678800501e-15,
+    "n_counts_equal": true,
+    "passed": true,
+    "phase1_bootstrap_reproduced": true
+  },
+  "phase2_numbers_source": "data/metadata/phase2/metrics_summary.csv and hypotheses.csv (no hand-typed Phase 2 results)",
   "paper_title": "Spatiotemporal Graph Attention and Diffusion Forecasting on METR-LA",
   "authors_count": 5,
-  "sections_count": 11,
-  "tables_count": 4,
-  "figures_count": 5,
+  "sections_count": 12,
+  "tables_count": 9,
+  "figures_count": 12,
   "references_count": 8,
   "claims_compliance": {
     "speed_units": "source speed units; physical units unverified",
     "timezone": "stored clock; UTC unverified",
-    "signal_control": "strictly simulated; no physical actuation claim",
+    "signal_control": "simulated; experiment A synthetic (noise sized from measured MAEs), experiment B real speeds and real forecasts with an assumed demand rule",
     "spatial_freeways": "coordinate proxy regions; no named freeways claimed"
   }
 }

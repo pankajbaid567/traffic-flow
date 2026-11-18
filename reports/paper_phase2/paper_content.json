@@ -13,7 +13,7 @@
     "fallback_author": "Phase 2 Project Team",
     "note": "Team member names confirmed in canonical order."
   },
-  "abstract": "We present a complete spatiotemporal deep learning benchmark and downstream operational evaluation on the METR-LA traffic network. Building upon the frozen Phase 1 machine learning baseline, we formulate multi-horizon speed forecasting (5, 15, 30, 60 minutes) across 207 loop detectors using Graph Attention Networks (GAT) and Diffusion Convolutional Recurrent Neural Networks (DCRNN). Strict experimental fair-comparison invariants are enforced: identical 70/10/20 chronological partitions, masked unavailable targets, and paired circular moving-block day-bootstrap significance testing. To isolate topological graph contributions from neural representational capacity, we evaluate structural controls including an equally expressive non-graph recurrent model (GRU Local), an identity adjacency ablation (GAT Identity), and a degree-preserving shuffled graph (GAT Shuffled). At the 60-minute horizon, GAT and DCRNN achieve test MAEs of 3.582 and 3.541 source units, demonstrating statistically supported gains over non-graph deep controls. To evaluate real-world utility beyond abstract loss functions, we implement a simulated adaptive traffic signal control experiment modeling queueing dynamics across 207 intersections under Webster delay formulation. In sudden incident shockwave regimes, graph-predictive control proactively clears standing queues 15\u201330 minutes in advance, reducing simulated mean vehicle delay by 44.4% and cutting freeway mainline spillback probability from 64.0% to 26.0%. These results demonstrate that topological graph foresight provides non-linear operational benefits where traditional local models fail.",
+  "abstract": "We extend a frozen Phase 1 benchmark of local forecasters on METR-LA (207 loop detectors, 5-minute speeds) with graph models that also see neighbouring sensors: a Graph Attention Network (GAT) and a Diffusion Convolutional Recurrent Neural Network (DCRNN). All models share the Phase 1 chronological 70/10/20 split, 12-step history, horizons (5, 15, 30, 60 min) and valid-target mask. Hyperparameters are chosen on validation only; final models are trained with three seeds (one for the shuffled and DCRNN identity controls). To separate the road graph from model capacity we compare against a per-sensor GRU, an identity-graph ablation and a degree-preserving shuffled graph. Against the same architecture without neighbours (identity graph), GAT changes 60-minute test MAE by +0.189 [+0.154, +0.221] (positive = lower error, 95% paired day-block bootstrap interval); the pre-registered graph hypothesis H2 is contradicted because a degree-preserving shuffled graph also beat the identity graph (+0.040 [+0.026, +0.054] at 60 min), although the real graph beat the shuffled one (+0.149 [+0.124, +0.174]). H1 (GAT beats a per-sensor GRU at 30 and 60 min) is supported. DCRNN against its own identity-graph control changes 60-minute MAE by +0.650 [+0.507, +0.785]. Compared with the strongest Phase 1 model (XGBoost with historical-average features, 60-minute MAE 3.688), the best Phase 2 model (DCRNN) reaches 3.734; DCRNN has lower error at 15 and 30 min, and no detectable difference at 5 and 60 min (H0 contradicted). In a software simulation of one signalised approach driven by real test-period speeds and the models' real forecasts, the best Phase 2 forecast changed mean delay by +0.01 s per vehicle relative to the Phase 1 forecast, and even a perfect forecast only by +0.40 s; the large effect is adaptive versus fixed timing. All signal results are simulated.",
   "blocks": [
     [
       "heading",
@@ -21,31 +21,27 @@
     ],
     [
       "paragraph",
-      "Accurate metropolitan traffic speed forecasting is foundational for intelligent transportation systems (ITS), ramp metering, and arterial signal optimization. However, standard machine learning evaluations often fall into the 'benchmark trap': optimizing marginal loss metrics (such as MAE or RMSE) in isolation without establishing whether learned predictions resolve physical traffic phenomena or translate into tangible operational benefits."
+      "Short-term speed forecasts feed ramp metering and signal timing. In Phase 1 of this capstone we built a local benchmark on METR-LA: persistence, historical average, Random Forest and XGBoost using only each sensor's own history. The best model, XGBoost with 36 features including historical-average profiles, reached a 60-minute test MAE of 3.688 source speed units, and error grew with horizon, consistent with models that cannot see conditions at neighbouring sensors."
     ],
     [
       "paragraph",
-      "In Phase 1 of this capstone, we constructed an exhaustive local machine learning benchmark on METR-LA, evaluating Persistence, Historical Average, Random Forest, and Gradient Boosted Trees (XGBoost) over 32 engineered own-sensor features. While a 36-feature XGBoost configuration augmented with historical profiles achieved a competitive 60-minute test MAE of 3.688 source units, spatial error analysis revealed a fundamental failure mode: sensor-independent models are structurally blind to spatial shockwave propagation. When an abrupt capacity drop or incident occurs downstream, upstream sensors continue to predict normal free-flow conditions until the physical congestion wave physically reaches their detector, resulting in severe 30\u201360 minute forecast lags."
-    ],
-    [
-      "paragraph",
-      "Phase 2 addresses this core limitation through two unified contributions: (1) We evaluate spatiotemporal Graph Neural Networks (Graph Attention Networks and Diffusion Convolutions) against rigorous non-graph and topological controls under a leak-free chronological protocol. (2) We bridge forecasting to real-world utility by conducting a simulated adaptive traffic signal control experiment, demonstrating how multi-horizon graph forecasts resolve intersection queue spillback and reduce commuter delay."
+      "Phase 2 asks one question, fixed before any result existed: does giving a forecaster neighbouring sensors through the road graph improve forecasts over equally capable models without the graph, on the same split, masks and history? We answer with pre-registered hypotheses whose verdicts are computed by code from paired bootstrap intervals. 'No detectable gain' was declared an acceptable answer. A separate, clearly simulated experiment feeds the forecasts into a signal-timing model."
     ],
     [
       "heading",
-      "II. RELATED WORK AND PHYSICAL MOTIVATION"
+      "II. RELATED WORK"
     ],
     [
       "paragraph",
-      "Deep spatiotemporal traffic modeling was popularized by DCRNN [1], which integrated bidirectional graph random walks with gated recurrent units. Concurrently, Graph Attention Networks (GAT) [2] introduced dynamic, data-driven edge weighting. While tree boosting [3] and ensemble methods [4] excel on tabular time-series features, they lack native mechanisms to route representations across non-Euclidean road networks."
-    ],
-    [
-      "paragraph",
-      "From the perspective of traffic fluid dynamics (Lighthill-Whitham-Richards kinematic wave theory) [8], traffic flow breakdowns generate backward-propagating shockwaves traveling upstream at characteristic speeds of -15 to -25 km/h. A localized model observing sensor i cannot anticipate an incoming wave originating at downstream sensor j. By exchanging representations along the directed road adjacency graph, graph neural networks can mathematically identify bottleneck formation before local speeds degrade."
+      "DCRNN [1] combines bidirectional diffusion on the road graph with gated recurrent units. Graph Attention Networks [2] learn data-dependent weights over a node's neighbours. Tree ensembles [3], [4] are strong on engineered features but have no built-in way to use the graph. Kinematic-wave theory [8] motivates using neighbours, since congestion propagates along a corridor. Model-selection bias [7] motivates choosing hyperparameters on validation only and reporting controls tuned the same way."
     ],
     [
       "heading",
-      "III. METHODOLOGY AND ARCHITECTURES"
+      "III. MODELS"
+    ],
+    [
+      "paragraph",
+      "Every deep model receives x of shape [12, 207, 7]: z-scored causally filled speed, a missing-reading flag, sine/cosine of time of day and day of week, and a weekend flag; it outputs z-scored speed for the four horizons. The loss is masked MAE in source speed units on valid targets only."
     ],
     [
       "subheading",
@@ -53,7 +49,7 @@
     ],
     [
       "paragraph",
-      "Our GAT architecture processes an input history of 12 five-minute steps (1 hour) across N=207 sensors. Each sensor's feature vector contains 7 channels: z-scored filled speed, missingness indicator, sine/cosine of time-of-day, and sine/cosine of day-of-week. A shared temporal GRU encoder maps each sensor's history into a latent embedding. Multi-head masked attention then updates node states across road network neighbors:"
+      "A shared temporal encoder (GRU or 1-D convolution) embeds each sensor's last hour (12 steps); multi-head masked attention mixes embeddings over graph neighbours (bidirectional road graph plus self-loops):"
     ],
     [
       "equation",
@@ -61,15 +57,15 @@
     ],
     [
       "paragraph",
-      "Pairwise attention logits are masked with -10^9 for disconnected sensor pairs (A_ij = 0). Outputs from K heads are projected through a linear transformation with residual skip connections and LayerNorm. A multi-layer perceptron then predicts residual speed deltas relative to the latest known speed observation across 4 horizons."
+      "Logits of unconnected pairs are set to -10^9. Head outputs pass through a projection with a residual connection and a small head predicts the four horizons."
     ],
     [
       "subheading",
-      "B. Diffusion Convolutional Recurrent Neural Network (DCRNN)"
+      "B. DCRNN"
     ],
     [
       "paragraph",
-      "DCRNN models spatial traffic diffusion through bidirectional random walks over the directed road graph A:"
+      "DCRNN applies K-hop forward and reverse random-walk diffusion on the directed graph inside a DCGRU encoder-decoder:"
     ],
     [
       "equation",
@@ -77,87 +73,118 @@
     ],
     [
       "paragraph",
-      "Here P_f and P_r represent forward and reverse transition matrices up to K=2 diffusion hops. An encoder-decoder DCGRU architecture captures temporal autocorrelation and outputs multi-horizon speed forecasts."
+      "with P_f = D_out^-1 A and P_r = D_in^-1 A^T."
     ],
     [
       "subheading",
-      "C. Structural & Topological Controls"
+      "C. Controls"
     ],
     [
       "paragraph",
-      "To prevent attributing general deep learning capacity gains to graph connectivity [7], we evaluate three controls: (1) GRU Local: An identical recurrent encoder-decoder with shared weights but zero spatial mixing between sensors. (2) GAT Identity: GAT executed with identity adjacency (self-loops only), testing attention mechanisms without neighbor mixing. (3) GAT Shuffled: Real road adjacency permuted by a fixed derangement, preserving node degree distribution while connecting geometrically incorrect sensors."
+      "GRU Local is a shared per-sensor GRU with no spatial mixing. GAT identity and DCRNN identity are the same architectures on a self-loop-only graph, so any difference to the full model is the effect of the neighbours. GAT shuffled uses a node-permuted graph with the same degree structure (wrong neighbours). Controls reuse the hyperparameters tuned for their main model, which can slightly understate them."
     ],
     [
       "heading",
-      "IV. EXPERIMENTAL PROTOCOL AND FAIR COMPARISON"
+      "IV. EXPERIMENTAL PROTOCOL"
     ],
     [
       "paragraph",
-      "All Phase 2 evaluations strictly inherit Phase 1 invariants: (1) Chronological 70/10/20 train/validation/test split (March 1 to June 27, 2012 on stored clock). (2) Valid target masking: zero, negative, and non-finite readings are treated as unavailable telemetry and excluded from loss and evaluation (1,245,052 valid 5-min test targets). (3) Scalers and imputers fitted strictly on training data. (4) Paired circular moving-block bootstrap (2-day blocks, 2,000 resamples, seed 42) across calendar days to quantify statistical significance."
+      "The Phase 1 contract is reused through Phase 1's own loaders: chronological split (2012-03-01 to 2012-06-27, stored clock), unavailable readings (zero, negative, non-finite) excluded from loss and scoring, fill and scaling fitted on training data only. Origins are 23,967 / 3,416 / 6,844. Each deep family has four search candidates trained with seed 42 and scored on validation; the candidate with the lowest mean validation MAE is retrained with seeds 42, 43, 44 (one seed for the shuffled and DCRNN identity controls) and only these final runs predict the test period. Training uses Adam, batch 32-64, early stopping with patience 8 on validation MAE, and a wall-clock cap per run. The scorer reproduces every Phase 1 metric (maximum |MAE difference| 0.0e+00) and every Phase 1 bootstrap interval exactly."
+    ],
+    [
+      "paragraph",
+      "Comparisons use Phase 1's paired circular moving-block bootstrap over stored days (2-day blocks, 2,000 resamples, seed 42); for multi-seed models each day's error sum is the mean over seeds. Peak/off-peak intervals use period-filtered day sums; contrasts between gains (H3, H4) are bootstrapped on the same resampled days. A comparison 'A beats B' is supported if the whole 95% interval of the MAE reduction is above zero, contradicted if below, inconclusive otherwise. Intervals are conditional on this test period and not adjusted for multiple comparisons."
     ],
     [
       "table",
       {
-        "caption": "TABLE I\nMETR-LA SPATIOTEMPORAL DATASET AND SPLIT CONTRACT",
+        "caption": "TABLE I\nFINAL TRAINING RUNS (FROM EACH RUN'S meta.json; DEVICE MPS). STOP: E EARLY STOPPING, M 60-EPOCH LIMIT, T TIME CAP, WITH RUN COUNTS",
         "headers": [
-          "Partition",
-          "Stored Clock Range",
-          "Origins",
-          "Valid Rows (5m)",
-          "Sensor Nodes",
-          "Directed Edges"
+          "Model",
+          "Graph",
+          "Params",
+          "Seeds",
+          "Epochs",
+          "Stop",
+          "Min/run"
         ],
         "rows": [
           [
-            "Train (70%)",
-            "2012-03-01 to 2012-05-23",
-            "23,967",
-            "4,360,789",
-            "207",
-            "1,722"
+            "GRU Local",
+            "identity",
+            "18,436",
+            "3",
+            "50-60",
+            "E2 M1",
+            "18"
           ],
           [
-            "Val (10%)",
-            "2012-05-23 to 2012-06-04",
-            "3,416",
-            "621,348",
-            "207",
-            "1,722"
+            "GAT identity",
+            "identity",
+            "22,788",
+            "3",
+            "46-55",
+            "E3",
+            "21"
           ],
           [
-            "Test (20%)",
-            "2012-06-04 to 2012-06-27",
-            "6,844",
-            "1,245,052",
-            "207",
-            "1,722"
+            "GAT shuffled",
+            "shuffled",
+            "22,788",
+            "1",
+            "60",
+            "M1",
+            "26"
+          ],
+          [
+            "DCRNN identity",
+            "identity",
+            "131,009",
+            "1",
+            "14",
+            "T1",
+            "50"
+          ],
+          [
+            "GAT",
+            "bidirectional",
+            "22,788",
+            "3",
+            "60",
+            "M3",
+            "26"
+          ],
+          [
+            "DCRNN",
+            "given",
+            "131,009",
+            "3",
+            "14",
+            "T3",
+            "50"
           ]
         ]
       }
     ],
     [
       "heading",
-      "V. FORECASTING BENCHMARK AND HYPOTHESIS TESTING"
-    ],
-    [
-      "paragraph",
-      "Table II presents the unified test evaluation across all models and horizons. At short horizons (5 min), Persistence (2.814) and local ML models perform strongly due to autoregressive inertia. However, as the horizon extends to 30 and 60 minutes, the value of spatiotemporal modeling becomes pronounced."
+      "V. FORECAST ACCURACY"
     ],
     [
       "table",
       {
-        "caption": "TABLE II\nUNIFIED MULTI-HORIZON TEST BENCHMARK ON METR-LA (MAE / RMSE / MAPE)",
+        "caption": "TABLE II\nTEST MAE BY HORIZON (SOURCE SPEED UNITS; PHASE 2 MEAN \u00b1 SD OVER SEEDS; P1 = PHASE 1)",
         "headers": [
-          "Model Family",
-          "Model Identifier",
-          "5 min MAE",
-          "15 min MAE",
-          "30 min MAE",
-          "60 min MAE"
+          "Family",
+          "Model",
+          "5 min",
+          "15 min",
+          "30 min",
+          "60 min"
         ],
         "rows": [
           [
-            "Baseline",
+            "Base",
             "Persistence",
             "2.814",
             "3.499",
@@ -165,15 +192,15 @@
             "5.380"
           ],
           [
-            "Baseline",
-            "Historical Average",
+            "Base",
+            "Historical average",
             "4.188",
             "4.188",
             "4.188",
             "4.189"
           ],
           [
-            "Phase 1 ML",
+            "P1 ML",
             "Random Forest 32",
             "2.452",
             "3.167",
@@ -181,7 +208,7 @@
             "4.854"
           ],
           [
-            "Phase 1 ML",
+            "P1 ML",
             "XGBoost 32",
             "2.362",
             "2.970",
@@ -189,7 +216,7 @@
             "4.393"
           ],
           [
-            "Phase 1 ML",
+            "P1 ML",
             "XGBoost + HA 36",
             "2.312",
             "2.844",
@@ -197,44 +224,120 @@
             "3.688"
           ],
           [
-            "Deep Control",
-            "GRU Local (No Graph)",
-            "2.418",
-            "2.985",
-            "3.522",
-            "4.215"
+            "No graph",
+            "GRU Local",
+            "2.369 \u00b10.002",
+            "2.975 \u00b10.002",
+            "3.560 \u00b10.004",
+            "4.379 \u00b10.006"
           ],
           [
-            "Graph Control",
-            "GAT Identity (A=I)",
-            "2.392",
-            "2.915",
-            "3.420",
-            "4.015"
+            "Control",
+            "GAT identity",
+            "2.367 \u00b10.002",
+            "2.971 \u00b10.002",
+            "3.554 \u00b10.002",
+            "4.364 \u00b10.003"
           ],
           [
-            "Graph Control",
-            "GAT Shuffled (Permuted)",
-            "2.445",
-            "3.020",
-            "3.590",
-            "4.180"
+            "Control",
+            "GAT shuffled",
+            "2.365",
+            "2.963",
+            "3.536",
+            "4.324"
           ],
           [
-            "Spatiotemporal",
-            "GAT (Real Graph)",
-            "2.285",
-            "2.762",
-            "3.148",
-            "3.582"
+            "Control",
+            "DCRNN identity",
+            "2.375",
+            "2.977",
+            "3.564",
+            "4.385"
           ],
           [
-            "Spatiotemporal",
-            "DCRNN (Diffusion)",
-            "2.241",
-            "2.710",
-            "3.115",
-            "3.541"
+            "Graph",
+            "GAT",
+            "2.331 \u00b10.001",
+            "2.905 \u00b10.001",
+            "3.443 \u00b10.001",
+            "4.175 \u00b10.007"
+          ],
+          [
+            "Graph",
+            "DCRNN",
+            "2.305 \u00b10.002",
+            "2.799 \u00b10.008",
+            "3.220 \u00b10.021",
+            "3.734 \u00b10.036"
+          ]
+        ]
+      }
+    ],
+    [
+      "paragraph",
+      "Table II gives test MAE. At 60 minutes the best Phase 2 model is DCRNN (3.734); GRU Local reaches 4.379 and XGBoost + HA 3.688. At 5 minutes the ordering is DCRNN 2.305, XGBoost + HA 36 2.312, GAT 2.331, GRU Local 2.369."
+    ],
+    [
+      "figure",
+      {
+        "file": "fig_horizon_mae.png",
+        "caption": "Fig. 1. Test MAE by horizon (Phase 2: mean \u00b1 sd over seeds)."
+      }
+    ],
+    [
+      "table",
+      {
+        "caption": "TABLE III\n60-MINUTE TEST RMSE, MAPE (%) AND PEAK / OFF-PEAK MAE",
+        "headers": [
+          "Model",
+          "RMSE",
+          "MAPE",
+          "MAE peak",
+          "MAE off-peak"
+        ],
+        "rows": [
+          [
+            "Persistence",
+            "10.344",
+            "14.53",
+            "8.144",
+            "4.686"
+          ],
+          [
+            "XGBoost + HA 36",
+            "7.470",
+            "11.34",
+            "5.563",
+            "3.217"
+          ],
+          [
+            "GRU Local",
+            "8.854",
+            "13.67",
+            "6.571",
+            "3.829"
+          ],
+          [
+            "GAT identity",
+            "8.827",
+            "13.57",
+            "6.542",
+            "3.816"
+          ],
+          [
+            "GAT",
+            "8.421",
+            "12.88",
+            "6.266",
+            "3.649"
+          ],
+          [
+            "DCRNN",
+            "7.588",
+            "10.98",
+            "5.513",
+            "3.287"
           ]
         ]
       }
@@ -242,165 +345,296 @@
     [
       "figure",
       {
-        "file": "fig_horizon_mae.png",
-        "caption": "Fig. 1. Test MAE trajectories across forecast horizons (5 to 60 min). Spatiotemporal graph models (GAT, DCRNN) consistently outperform deep and topological controls."
+        "file": "fig_peak_offpeak.png",
+        "caption": "Fig. 2. 60-minute test MAE in weekday peak (07-10, 16-19 stored clock) and off-peak."
+      }
+    ],
+    [
+      "heading",
+      "VI. DOES THE ROAD GRAPH HELP?"
+    ],
+    [
+      "table",
+      {
+        "caption": "TABLE IV\nPAIRED BOOTSTRAP: MAE REDUCTION OF FIRST MODEL [95% CI]",
+        "headers": [
+          "Comparison",
+          "15 min",
+          "60 min"
+        ],
+        "rows": [
+          [
+            "GAT vs GRU Local",
+            "+0.069 [+0.060, +0.079]",
+            "+0.205 [+0.168, +0.238]"
+          ],
+          [
+            "GAT vs GAT identity",
+            "+0.066 [+0.057, +0.074]",
+            "+0.189 [+0.154, +0.221]"
+          ],
+          [
+            "GAT vs GAT shuffled",
+            "+0.058 [+0.050, +0.065]",
+            "+0.149 [+0.124, +0.174]"
+          ],
+          [
+            "GAT shuffled vs GAT identity",
+            "+0.008 [+0.005, +0.012]",
+            "+0.040 [+0.026, +0.054]"
+          ],
+          [
+            "DCRNN vs GRU Local",
+            "+0.176 [+0.142, +0.209]",
+            "+0.645 [+0.503, +0.774]"
+          ],
+          [
+            "DCRNN vs DCRNN identity",
+            "+0.178 [+0.145, +0.210]",
+            "+0.650 [+0.507, +0.785]"
+          ],
+          [
+            "GAT vs XGBoost + HA 36",
+            "-0.062 [-0.078, -0.045]",
+            "-0.487 [-0.580, -0.388]"
+          ],
+          [
+            "DCRNN vs XGBoost + HA 36",
+            "+0.045 [+0.024, +0.067]",
+            "-0.046 [-0.100, +0.004]"
+          ],
+          [
+            "GRU Local vs XGBoost + HA 36",
+            "-0.131 [-0.151, -0.110]",
+            "-0.692 [-0.810, -0.563]"
+          ]
+        ]
+      }
+    ],
+    [
+      "table",
+      {
+        "caption": "TABLE V\nPRE-REGISTERED HYPOTHESES AND CODE-COMPUTED VERDICTS",
+        "headers": [
+          "ID",
+          "Hypothesis",
+          "Verdict"
+        ],
+        "rows": [
+          [
+            "H1",
+            "gat has lower MAE than gru_local at 30 and 60 min",
+            "supported"
+          ],
+          [
+            "H2",
+            "gat beats gat_identity, and gat_shuffled is no better than gat_identity",
+            "contradicted (part a supported, part b contradicted)"
+          ],
+          [
+            "H3",
+            "gat vs gat_identity gain is larger in peak than off-peak",
+            "supported"
+          ],
+          [
+            "H4",
+            "gat vs gat_identity gain grows with horizon (5 < 15 < 30 < 60 min)",
+            "supported"
+          ],
+          [
+            "H5",
+            "gain is larger at sensors with more neighbours and around congestion onsets (descriptive)",
+            "descriptive"
+          ],
+          [
+            "H0",
+            "gat and dcrnn do not differ from xgboost_ha",
+            "contradicted"
+          ]
+        ]
       }
     ],
     [
       "paragraph",
-      "Formal pre-registered hypotheses H1\u2013H5 were tested using paired circular moving-block bootstrap confidence intervals: (H1) GAT beats GRU Local at 30m and 60m: SUPPORTED (95% CI of MAE reduction strictly positive, [0.312, 0.435] at 60m). (H2) GAT beats GAT Identity, while GAT Shuffled does not beat GAT Identity: SUPPORTED (proving real road adjacency is required). (H3) Graph gain is larger in peak than off-peak: SUPPORTED (peak gain 0.518 vs off-peak gain 0.384). (H4) Graph gain grows monotonically with horizon: SUPPORTED (5m: 0.133 < 15m: 0.223 < 30m: 0.374 < 60m: 0.633). (H0) GAT and DCRNN vs XGBoost+HA: Deep models match and slightly exceed the 36-feature tree baseline at 60m (3.582 and 3.541 vs 3.688), noting that deep models did not receive explicit historical average feature columns."
+      "H1 (supported): GAT minus GRU Local reduction 30min: +0.118 [+0.097, +0.138]; 60min: +0.205 [+0.168, +0.238]. H2 (contradicted): part a, GAT vs GAT identity, 5min: +0.036 [+0.032, +0.041]; 15min: +0.066 [+0.057, +0.074]; 30min: +0.112 [+0.094, +0.130]; 60min: +0.189 [+0.154, +0.221] | part b, GAT shuffled vs GAT identity, 5min: +0.002 [+0.001, +0.003]; 15min: +0.008 [+0.005, +0.012]; 30min: +0.018 [+0.011, +0.026]; 60min: +0.040 [+0.026, +0.054]. H3 (supported): peak gain minus off-peak gain 5min: +0.039 [+0.033, +0.045]; 15min: +0.057 [+0.044, +0.069]; 30min: +0.084 [+0.059, +0.112]; 60min: +0.109 [+0.043, +0.180]. H4 (supported): change in gain between consecutive horizons 15min minus 5min: +0.030 [+0.025, +0.035]; 30min minus 15min: +0.046 [+0.035, +0.056]; 60min minus 30min: +0.077 [+0.059, +0.094]."
+    ],
+    [
+      "paragraph",
+      "H5 (descriptive): Spearman(degree, per-sensor 60 min gain) = 0.284 over 207 sensors. 15min: gain at proxy onsets 1.072 vs elsewhere 0.045. 30min: gain at proxy onsets 1.462 vs elsewhere 0.073. 60min: gain at proxy onsets 2.223 vs elsewhere 0.104."
+    ],
+    [
+      "paragraph",
+      "H0 (contradicted): reduction of each model vs XGBoost + HA, GAT, 5min: -0.018 [-0.024, -0.012]; 15min: -0.062 [-0.078, -0.045]; 30min: -0.167 [-0.206, -0.125]; 60min: -0.487 [-0.580, -0.388] | DCRNN, 5min: +0.007 [-0.004, +0.018]; 15min: +0.045 [+0.024, +0.067]; 30min: +0.055 [+0.017, +0.093]; 60min: -0.046 [-0.100, +0.004]. XGBoost + HA uses historical-average features the deep models do not receive, so this difference is not a graph effect; only the within-family comparisons above isolate the graph."
     ],
     [
       "figure",
       {
         "file": "fig_graph_ablation.png",
-        "caption": "Fig. 2. Structural ablation of network topology. Preserving node degree while shuffling edges (GAT Shuffled) eliminates graph gain, verifying dependency on physical road layout."
+        "caption": "Fig. 3. Paired bootstrap intervals; positive values mean the first model has lower test MAE."
+      }
+    ],
+    [
+      "figure",
+      {
+        "file": "fig_error_by_degree.png",
+        "caption": "Fig. 4. Per-sensor 60-minute gain of GAT over GAT identity against graph degree (descriptive)."
+      }
+    ],
+    [
+      "figure",
+      {
+        "file": "fig_seed_spread.png",
+        "caption": "Fig. 5. Test MAE of each training seed."
       }
     ],
     [
       "heading",
-      "VI. CASE STUDY: RESOLUTION OF SENSOR 717468 BOTTLENECK"
+      "VII. SPATIAL AND EVENT ANALYSIS"
+    ],
+    [
+      "table",
+      {
+        "caption": "TABLE VI\nPROXY CONGESTION: ONSET RECALL BY HORIZON AND 60-MIN PRECISION (TEST)",
+        "headers": [
+          "Model",
+          "Onset 15m",
+          "Onset 30m",
+          "Onset 60m",
+          "Prec. 60m"
+        ],
+        "rows": [
+          [
+            "Persistence",
+            "0.000",
+            "0.000",
+            "0.000",
+            "0.639"
+          ],
+          [
+            "XGBoost + HA 36",
+            "0.183",
+            "0.227",
+            "0.341",
+            "0.827"
+          ],
+          [
+            "GRU Local",
+            "0.127",
+            "0.122",
+            "0.119",
+            "0.781"
+          ],
+          [
+            "GAT",
+            "0.167",
+            "0.167",
+            "0.176",
+            "0.792"
+          ],
+          [
+            "DCRNN",
+            "0.277",
+            "0.331",
+            "0.410",
+            "0.796"
+          ]
+        ]
+      }
     ],
     [
       "paragraph",
-      "In Phase 1 error diagnostics, Sensor 717468 was identified as the single worst-case failure mode: on June 20, 2012 at 19:00, an abrupt capacity collapse occurred, dropping speeds from 65 to 10 source units. All Phase 1 models lagged by over 45 minutes because their input features were localized to the sensor itself."
+      "Proxy congestion means speed below 60% of the sensor's training 85th percentile; an onset is a target that is congested while the origin was not. Onsets are rare and hard for every model; Table VI reports how many of them each model's forecast also places below the threshold."
     ],
     [
-      "paragraph",
-      "As illustrated in Fig. 3, Phase 2 spatiotemporal graph modeling resolves this failure mode. Because downstream and upstream detectors experienced the onset wave 15\u201320 minutes earlier, GAT's multi-head attention dynamically routes attention weights to these connected neighbors, anticipating the collapse at the exact onset time."
+      "figure",
+      {
+        "file": "fig_map_morning_60min.png",
+        "caption": "Fig. 6. Test morning peak, 60 min: observed speed, MAE of XGBoost + HA 36 and DCRNN, and their difference (sensor coordinates)."
+      }
+    ],
+    [
+      "figure",
+      {
+        "file": "fig_map_evening_60min.png",
+        "caption": "Fig. 7. As Fig. 6 for the evening peak."
+      }
+    ],
+    [
+      "figure",
+      {
+        "file": "fig_congestion_map_evening_15min.png",
+        "caption": "Fig. 8. Observed and predicted proxy congestion rate, evening peak, 15 min."
+      }
     ],
     [
       "figure",
       {
         "file": "fig_case_study.png",
-        "caption": "Fig. 3. Retrospective case study of Sensor 717468 incident collapse (June 20, 2012 at 19:00). Phase 1 XGBoost suffers 45-minute spatial blindness lag; Phase 2 Graph Attention anticipates collapse through topological neighbor telemetry."
+        "caption": "Fig. 9. Phase 1's retrospective example (sensor 717468, 2012-06-11): observed speed and forecasts plotted at target time. Selected for inspection after evaluation; illustrative, not a test."
+      }
+    ],
+    [
+      "paragraph",
+      "Attention summaries (GAT seed 42, 12 exported test origins): Mean attention on the sensor itself 0.096 (off-peak) / 0.098 (peak); on graph neighbours 0.904 (off-peak) / 0.902 (peak); on 'downstream' neighbours (graph direction convention) 0.511 (off-peak) / 0.511 (peak); on 'upstream' neighbours 0.510 (off-peak) / 0.508 (peak); row entropy 2.502 (off-peak) / 2.504 (peak). A neighbour linked in both directions counts as both upstream and downstream, so those two shares can add up to more than the neighbour share. Attention shows what the model weighted, not how traffic propagates."
+    ],
+    [
+      "figure",
+      {
+        "file": "fig_attention_example.png",
+        "caption": "Fig. 10. GAT attention from the highest-degree sensor to its neighbours (last layer, head mean)."
       }
     ],
     [
       "heading",
-      "VII. SIMULATED ADAPTIVE TRAFFIC SIGNAL CONTROL"
+      "VIII. SIMULATED SIGNAL CONTROL"
     ],
     [
       "paragraph",
-      "To establish whether predictive speed improvements deliver real-world utility, we formulated a discrete-event queueing simulation of a signalized arterial ramp approach (Webster two-term delay + overflow spillback penalty) [5]. Arrival flow rate is governed by the Greenshields fundamental diagram: q(v) = k_jam * v * (1 - v / v_free)."
-    ],
-    [
-      "equation",
-      "DELAY = (3)"
+      "This is a software simulation, not traffic control. One signalised main approach (2 lanes) and a cross street (1 lane, 500 veh/h) are simulated cycle by cycle (90 s cycle, 10 s lost time, green 15-60 s) with Greenshields-shaped arrivals generated from speed and Webster uniform delay plus an overflow term [5]. Adaptive policies size green for the worst of the speed signals they see."
     ],
     [
       "paragraph",
-      "We evaluated four signal timing policies across 80 independent simulation runs (5 seeds, 4 operating scenarios): (1) Fixed-Time: Static 35s green allocation. (2) Reactive Actuated: Adjusts green based on current loop detector speed. (3) Local Predictive (Phase 1): Uses localized 15m XGBoost speed forecast. (4) Spatiotemporal Graph Predictive (Phase 2): Synthesizes 15m and 30m graph forecasts to proactively flush queues and adjust cycle splits before shockwaves arrive."
+      "Experiment A (synthetic) uses synthetic speed profiles and synthetic forecasts with noise sized to measured test MAEs (local 2.97, graph 2.905 at 15 min). Experiment B uses real test-period weekday speeds (06:00-21:00) of the 30 sensors with the most proxy congestion (chosen from observed data only) and the models' actual test forecasts; every predictive policy sees the same signals and only the forecast source differs."
     ],
     [
       "table",
       {
-        "caption": "TABLE III\nSIMULATED ADAPTIVE TRAFFIC SIGNAL CONTROL BENCHMARK ACROSS 80 RUNS",
+        "caption": "TABLE VII\nEXPERIMENT A (SYNTHETIC): MEAN DELAY, S/VEH",
         "headers": [
-          "Operating Scenario",
-          "Control Policy",
-          "Mean Delay (s/veh)",
-          "Spillback Rate (%)",
-          "Fuel Proxy (L)"
+          "Scenario",
+          "Fixed",
+          "Reactive",
+          "Local fc.",
+          "Graph fc."
         ],
         "rows": [
           [
-            "Morning Peak",
-            "Fixed-Time",
-            "248.9 \u00b1 1.9",
-            "76.5%",
-            "407.0"
+            "Morning",
+            "222.3",
+            "26.9",
+            "24.9",
+            "23.9"
           ],
           [
-            "Morning Peak",
-            "Reactive Actuated",
-            "243.3 \u00b1 2.6",
-            "74.3%",
-            "475.0"
+            "Evening",
+            "447.0",
+            "27.4",
+            "25.6",
+            "24.7"
           ],
           [
-            "Morning Peak",
-            "Local Predictive (P1)",
-            "246.0 \u00b1 3.1",
-            "75.7%",
-            "468.2"
+            "Incident",
+            "297.5",
+            "27.6",
+            "26.3",
+            "25.7"
           ],
           [
-            "Morning Peak",
-            "Graph Predictive (P2)",
-            "206.0 \u00b1 10.2",
-            "62.5%",
-            "481.8"
-          ],
-          [
-            "Evening Peak",
-            "Fixed-Time",
-            "269.0 \u00b1 3.4",
-            "80.3%",
-            "473.6"
-          ],
-          [
-            "Evening Peak",
-            "Reactive Actuated",
-            "256.3 \u00b1 5.8",
-            "77.7%",
-            "582.8"
-          ],
-          [
-            "Evening Peak",
-            "Local Predictive (P1)",
-            "261.7 \u00b1 3.5",
-            "79.5%",
-            "581.0"
-          ],
-          [
-            "Evening Peak",
-            "Graph Predictive (P2)",
-            "248.6 \u00b1 3.9",
-            "74.2%",
-            "644.7"
-          ],
-          [
-            "Incident Shockwave",
-            "Fixed-Time",
-            "202.6 \u00b1 1.2",
-            "64.0%",
-            "291.6"
-          ],
-          [
-            "Incident Shockwave",
-            "Reactive Actuated",
-            "141.9 \u00b1 3.4",
-            "35.2%",
-            "263.6"
-          ],
-          [
-            "Incident Shockwave",
-            "Local Predictive (P1)",
-            "152.4 \u00b1 7.0",
-            "47.8%",
-            "290.5"
-          ],
-          [
-            "Incident Shockwave",
-            "Graph Predictive (P2)",
-            "112.6 \u00b1 12.4",
-            "26.0%",
-            "232.7"
-          ],
-          [
-            "Off-Peak Baseline",
-            "Fixed-Time",
-            "27.3 \u00b1 0.3",
-            "0.0%",
-            "28.5"
-          ],
-          [
-            "Off-Peak Baseline",
-            "Graph Predictive (P2)",
-            "22.8 \u00b1 3.1",
-            "0.0%",
-            "25.9"
+            "Off-peak",
+            "19.6",
+            "27.5",
+            "25.7",
+            "23.8"
           ]
         ]
       }
@@ -409,100 +643,168 @@
       "figure",
       {
         "file": "fig_signal_delay_comparison.png",
-        "caption": "Fig. 4. Mean vehicle delay across signal control policies in simulated operating regimes. Error bars indicate standard deviation across 5 independent random seeds."
+        "caption": "Fig. 11. Experiment A: simulated mean delay by policy and scenario."
       }
-    ],
-    [
-      "figure",
-      {
-        "file": "fig_signal_queue_dynamics.png",
-        "caption": "Fig. 5. Simulated queue accumulation during incident shockwave. Reactive and local policies suffer severe mainline spillback; Graph Predictive policy proactively flushes queue to remain within ramp capacity."
-      }
-    ],
-    [
-      "heading",
-      "VIII. COMPUTATIONAL EFFICIENCY AND SUSTAINABILITY"
-    ],
-    [
-      "paragraph",
-      "Table IV summarizes model complexity, parameter counts, and inference latency. GAT achieves competitive performance with only 6,276 parameters\u2014under 1/20th the size of DCRNN (131,009 parameters). On an Apple Silicon M3 processor, GAT achieves an inference latency of 0.82 ms per origin batch, easily supporting real-time deployment within 90-second traffic signal controllers."
     ],
     [
       "table",
       {
-        "caption": "TABLE IV\nCOMPUTATIONAL EFFICIENCY, MODEL COMPLEXITY AND RUNTIME PROFILE",
+        "caption": "TABLE VIII\nEXPERIMENT B (REAL SPEEDS AND FORECASTS, 3780 RUNS)",
         "headers": [
-          "Model Identifier",
-          "Architecture",
-          "Parameter Count",
-          "Inference Latency",
-          "Colab T4 Epoch"
+          "Policy",
+          "Delay s/veh",
+          "Spillback",
+          "Saved vs XGB [95% CI]"
         ],
         "rows": [
           [
-            "Persistence",
-            "Rule-based",
-            "0",
-            "< 0.01 ms",
-            "N/A"
+            "Fixed-time",
+            "2179.23",
+            "72.8%",
+            "-2152.55 [-2423.75, -1910.78]"
           ],
           [
-            "Random Forest 32",
-            "Ensemble (100 trees)",
-            "~1.2M",
-            "14.2 ms",
-            "N/A"
+            "Reactive",
+            "27.35",
+            "0.0%",
+            "-0.67 [-0.71, -0.63]"
           ],
           [
-            "XGBoost + HA 36",
-            "Gradient Boosted Trees",
-            "~450k",
-            "2.1 ms",
-            "N/A"
+            "XGBoost + HA forecast",
+            "26.68",
+            "0.0%",
+            "-"
           ],
           [
-            "GRU Local",
-            "Recurrent (Non-graph)",
-            "5,124",
-            "0.45 ms",
-            "1.5 s"
+            "GRU Local forecast",
+            "27.00",
+            "0.0%",
+            "-0.31 [-0.36, -0.26]"
           ],
           [
-            "GAT (Candidate 0)",
-            "Graph Attention Network",
-            "6,276",
-            "0.82 ms",
-            "6.4 s"
+            "GAT forecast",
+            "26.88",
+            "0.0%",
+            "-0.19 [-0.24, -0.14]"
           ],
           [
-            "DCRNN (Candidate 2)",
-            "Diffusion Convolutions",
-            "131,009",
-            "4.80 ms",
-            "24.1 s"
+            "DCRNN forecast",
+            "26.67",
+            "0.0%",
+            "+0.01 [-0.02, +0.04]"
+          ],
+          [
+            "Perfect forecast (ref.)",
+            "26.28",
+            "0.0%",
+            "+0.40 [+0.33, +0.46]"
           ]
         ]
       }
     ],
     [
       "paragraph",
-      "Furthermore, our simulated emissions proxy indicates that by eliminating queue spillbacks during peak hours, graph-predictive control reduces fuel waste and idling CO2 emissions by up to 20.2% during severe incident regimes."
+      "Fixed timing with a 35 s green cannot keep up with the simulated demand over a full day, so its queue and delay grow without bound; this is a property of the assumed demand rule. Among adaptive policies the forecast source changes delay by fractions of a second per vehicle, and a perfect forecast bounds what any forecaster could add in this simulator."
+    ],
+    [
+      "figure",
+      {
+        "file": "fig_signal_real_forecasts.png",
+        "caption": "Fig. 12. Experiment B: delay saved per vehicle relative to the XGBoost + HA forecast."
+      }
     ],
     [
       "heading",
-      "IX. REPRODUCIBILITY AND SCIENTIFIC LIMITATIONS"
+      "IX. MODEL SIZE"
     ],
     [
-      "paragraph",
-      "All Phase 2 code, configurations, model checkpoints, and evaluation scripts are publicly preserved in the repository. Unit tests cover 96 verification cases including zero leakage, parameter count locks, and queue conservation. Per project rules, the following scientific boundaries are explicitly declared: (1) Speeds are reported in source units (likely mph, unverified). (2) Timestamps reflect stored clock time. (3) Geographic regions represent coordinate bounding boxes rather than verified freeway administrations. (4) Signal control experiments are purely simulated in software and do not imply live field actuation."
+      "table",
+      {
+        "caption": "TABLE IX\nPARAMETER COUNTS OF SEARCH CANDIDATES",
+        "headers": [
+          "Candidate",
+          "Settings",
+          "Parameters"
+        ],
+        "rows": [
+          [
+            "gru_local c0",
+            "hidden=32, layers=1",
+            "5,124"
+          ],
+          [
+            "gru_local c1",
+            "hidden=64, layers=1",
+            "18,436"
+          ],
+          [
+            "gru_local c2",
+            "hidden=32, layers=2",
+            "11,460"
+          ],
+          [
+            "gru_local c3",
+            "hidden=64, layers=2",
+            "43,396"
+          ],
+          [
+            "gat c0",
+            "hidden=32, heads=2, layers=1, temporal_encoder=gru",
+            "6,276"
+          ],
+          [
+            "gat c1",
+            "hidden=64, heads=2, layers=1, temporal_encoder=gru",
+            "22,788"
+          ],
+          [
+            "gat c2",
+            "hidden=32, heads=4, layers=2, temporal_encoder=gru",
+            "7,428"
+          ],
+          [
+            "gat c3",
+            "hidden=32, heads=2, layers=1, temporal_encoder=conv",
+            "6,148"
+          ],
+          [
+            "dcrnn c0",
+            "hidden=32, layers=1, K=1",
+            "20,961"
+          ],
+          [
+            "dcrnn c1",
+            "hidden=32, layers=1, K=2",
+            "34,785"
+          ],
+          [
+            "dcrnn c2",
+            "hidden=64, layers=1, K=2",
+            "131,009"
+          ],
+          [
+            "dcrnn c3",
+            "hidden=32, layers=2, K=2",
+            "96,417"
+          ]
+        ]
+      }
     ],
     [
       "heading",
-      "X. CONCLUSION"
+      "X. REPRODUCIBILITY AND LIMITATIONS"
     ],
     [
       "paragraph",
-      "Phase 2 successfully resolves the core spatial blindness limitation of Phase 1 local machine learning models. By modeling the METR-LA sensor network as a directed road graph, GAT and DCRNN achieve statistically significant forecast gains across 30 and 60-minute horizons. More importantly, downstream signal simulation proves that graph predictive foresight prevents queue spillbacks during shockwave events, reducing vehicle delay by 44.4%. This bridges abstract loss minimization to measurable, real-world intelligent transportation impact."
+      "Code, run files, final configs, checkpoints and result tables are in the repository; 107 Phase 2 unit tests cover leakage, Phase 1 parity, graph handling, verdict logic and the simulator. Limits: (1) speeds are in source units (likely mph, unverified); (2) timestamps are on the stored clock (timezone unverified); (3) regions are coordinate boxes, not named freeways; (4) congestion is a proxy; (5) one chronological split of one city and season; (6) wall-clock caps and a 60-epoch limit bound training; all final runs used the same device (MPS, Table I), so runs that hit a cap reflect that device's speed; GAT stopped at the 60-epoch limit after 60 epochs; DCRNN stopped at the wall-clock cap after 14 epochs, so these models may be under-trained; (7) intervals are not adjusted for multiple comparisons; (8) attention weights are not evidence of traffic propagation; (9) signal results are simulated with an assumed demand rule."
+    ],
+    [
+      "heading",
+      "XI. CONCLUSION"
+    ],
+    [
+      "paragraph",
+      "We compared graph and non-graph forecasters under one leak-free protocol with code-computed verdicts. On this split, the road graph lowered GAT's error relative to the same model without neighbours (+0.189 [+0.154, +0.221] at 60 min), but a shuffled graph with the same degrees also helped (+0.040 [+0.026, +0.054]), so H2 as pre-registered is not supported: part of the gain comes from mixing information across sensors, not only from the true road links, while the real graph still beat the shuffled one (+0.149 [+0.124, +0.174]); GAT's 60-minute MAE is higher than the Phase 1 XGBoost + HA model, which uses features the deep models lack; DCRNN gained more from its graph (+0.650 [+0.507, +0.785] at 60 min against its identity control, one control seed); DCRNN, compared with XGBoost + HA, has lower error at 15 and 30 min, and no detectable difference at 5 and 60 min, without historical-average features, even though its training was cut by the wall-clock cap. In simulation, adaptive timing mattered far more than forecast accuracy."
     ],
     [
       "heading",
@@ -510,35 +812,35 @@
     ],
     [
       "reference",
-      "Y. Li, R. Yu, C. Shahabi, and Y. Liu, \"Diffusion convolutional recurrent neural network: Data-driven traffic forecasting,\" in Proc. Int. Conf. Learning Representations, 2018. arXiv:1707.01926."
+      "[1] Y. Li, R. Yu, C. Shahabi, and Y. Liu, \"Diffusion convolutional recurrent neural network: Data-driven traffic forecasting,\" in Proc. Int. Conf. Learning Representations, 2018. arXiv:1707.01926."
     ],
     [
       "reference",
-      "P. Velickovic, G. Cucurull, A. Casanova, A. Romero, P. Lio, and Y. Bengio, \"Graph attention networks,\" in Proc. Int. Conf. Learning Representations, 2018. arXiv:1710.10903."
+      "[2] P. Velickovic, G. Cucurull, A. Casanova, A. Romero, P. Lio, and Y. Bengio, \"Graph attention networks,\" in Proc. Int. Conf. Learning Representations, 2018. arXiv:1710.10903."
     ],
     [
       "reference",
-      "T. Chen and C. Guestrin, \"XGBoost: A scalable tree boosting system,\" in Proc. 22nd ACM SIGKDD Int. Conf. Knowledge Discovery and Data Mining, 2016, pp. 785-794, doi: 10.1145/2939672.2939785."
+      "[3] T. Chen and C. Guestrin, \"XGBoost: A scalable tree boosting system,\" in Proc. 22nd ACM SIGKDD Int. Conf. Knowledge Discovery and Data Mining, 2016, pp. 785-794, doi: 10.1145/2939672.2939785."
     ],
     [
       "reference",
-      "L. Breiman, \"Random forests,\" Machine Learning, vol. 45, pp. 5-32, 2001, doi: 10.1023/A:1010933404324."
+      "[4] L. Breiman, \"Random forests,\" Machine Learning, vol. 45, pp. 5-32, 2001, doi: 10.1023/A:1010933404324."
     ],
     [
       "reference",
-      "F. V. Webster, \"Traffic signal settings,\" Road Research Technical Paper No. 39, Road Research Laboratory, London, 1958."
+      "[5] F. V. Webster, \"Traffic signal settings,\" Road Research Technical Paper No. 39, Road Research Laboratory, London, 1958."
     ],
     [
       "reference",
-      "G. F. Newell, \"A simplified car-following theory: a lower order model,\" Transportation Research Part B: Methodological, vol. 36, no. 3, pp. 195-205, 2002."
+      "[6] G. F. Newell, \"A simplified car-following theory: a lower order model,\" Transportation Research Part B: Methodological, vol. 36, no. 3, pp. 195-205, 2002."
     ],
     [
       "reference",
-      "G. C. Cawley and N. L. C. Talbot, \"On over-fitting in model selection and subsequent selection bias in performance evaluation,\" Journal of Machine Learning Research, vol. 11, pp. 2079-2107, 2010."
+      "[7] G. C. Cawley and N. L. C. Talbot, \"On over-fitting in model selection and subsequent selection bias in performance evaluation,\" Journal of Machine Learning Research, vol. 11, pp. 2079-2107, 2010."
     ],
     [
       "reference",
-      "M. J. Lighthill and G. B. Whitham, \"On kinematic waves II. A theory of traffic flow on long crowded roads,\" Proc. Royal Society of London. Series A, vol. 229, no. 1178, pp. 317-345, 1955."
+      "[8] M. J. Lighthill and G. B. Whitham, \"On kinematic waves II. A theory of traffic flow on long crowded roads,\" Proc. Royal Society of London. Series A, vol. 229, no. 1178, pp. 317-345, 1955."
     ]
   ]
 }

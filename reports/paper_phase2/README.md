@@ -13,3 +13,7 @@ Pankaj Baid, Ashutosh Singh, Shreya Suman, Narendra Singh, Ranvendra Pratap Sing
 - `paper_content.json`: Machine-readable structured narrative blocks.
 - `qa_report.json`: QA claims audit.
 - `figures/`: Publication-grade figures.
+- `phase2_ieee_source.zip`: Overleaf bundle (`.tex`, `authors.json`, this README, included figures); rebuild command in `reports/phase2/reproduction.md`.
+- `phase2_slides.pptx`: Presentation, built by `scripts/build_phase2_slides.py`.
+
+Every Phase 2 number is read from `data/metadata/phase2/` (written by `scripts/phase2_eval_all.py` and `scripts/phase2_run_signal_sim.py`); nothing is typed in by hand.
