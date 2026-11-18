@@ -61,12 +61,11 @@ class ForecastErrorSpec:
     """MAE (source speed units) used to size the synthetic forecast noise."""
 
     local_15m_mae: float = 2.970   # XGBoost 32, test, all: data/metadata/phase1_metrics.csv
-    graph_15m_mae: float = 2.762   # GAT, test: paper Table II (hard-coded in build_phase2_paper.py)
-    graph_30m_mae: float = 3.148   # GAT, test: paper Table II (hard-coded in build_phase2_paper.py)
+    graph_15m_mae: float = 2.762   # placeholder; scripts/phase2_run_signal_sim.py replaces it with
+    graph_30m_mae: float = 3.148   # GAT's measured test MAE once metrics_summary.csv exists
     source: str = (
         "local: XGBoost 32 test MAE from data/metadata/phase1_metrics.csv; "
-        "graph: GAT test MAE as written in scripts/build_phase2_paper.py (not yet backed by a "
-        "tracked evaluation output)"
+        "graph: placeholder MAE (no measured GAT result supplied)"
     )
 
 

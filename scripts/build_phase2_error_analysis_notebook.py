@@ -1,151 +1,133 @@
-"""Script to generate notebooks/phase2_error_analysis.ipynb using nbformat (Member 4).
+"""Build (and optionally execute) notebooks/phase2_error_analysis.ipynb (Member 4).
 
-Contract: reports/phase2_plan.md section 8.4.
-Outputs a clean, executable Jupyter notebook performing stratified error analysis.
+    python scripts/build_phase2_error_analysis_notebook.py [--execute]
+
+The notebook only reads tracked outputs of scripts/phase2_eval_all.py and
+scripts/phase2_run_signal_sim.py (data/metadata/phase2/, figures/phase2/), so it runs
+on a clean clone without the git-ignored prediction files.
 """
 
 from __future__ import annotations
 
+import argparse
 from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
 import nbformat as nbf
 
-from src.phase2.common import ROOT
+NB_PATH = ROOT / "notebooks" / "phase2_error_analysis.ipynb"
 
-NOTEBOOK_PATH = ROOT / "notebooks" / "phase2_error_analysis.ipynb"
+CELLS = [
+    ("md", """# Phase 2 error analysis
 
-
-def build_notebook() -> Path:
-    nb = nbf.v4.new_notebook()
-
-    cells = []
-
-    # 1. Header
-    cells.append(nbf.v4.new_markdown_cell("""# Phase 2: Spatiotemporal Error Analysis & Graph Model Diagnostics
-
-**Author:** Member 4 (`phase2/m4-evaluation`)  
-**Project:** METR-LA Highway Traffic Speed Forecasting — Phase 2 Deep & Graph Benchmark  
-
-This notebook evaluates multi-horizon traffic speed forecasts, isolating where and when road network graph representations (GAT, DCRNN) provide statistically measurable advantages over non-graph deep controls (`gru_local`, `gat_identity`, `dcrnn_identity`, `gat_shuffled`) and Phase 1 competitive tree baselines (`xgboost_ha`).
-
-> **Scientific Disclaimers & Terminology Invariants:**
-> - Speeds are measured in **source speed units** (unverified, likely mph).
-> - Timestamps represent the **stored clock** (unverified timezone).
-> - Spatial groupings represent deterministic **coordinate regions**, not administrative freeways.
-> - Congestion states are identified via a declared **proxy threshold** (< 60% of training 85th percentile speed).
-"""))
-
-    # 2. Setup
-    cells.append(nbf.v4.new_code_cell("""import os
-import sys
-from pathlib import Path
-
-# Ensure writable matplotlib cache
-os.environ["MPLCONFIGDIR"] = "/tmp/matplotlib_p2"
-
-import matplotlib.pyplot as plt
-import numpy as np
+Reads the tracked result tables written by `scripts/phase2_eval_all.py` (all numbers come from scored
+test/validation predictions). Units are **source speed units**, times are the **stored clock**, regions are
+**coordinate regions**, congestion is a **proxy**, and signal results are **simulated**."""),
+    ("code", """from pathlib import Path
+import json
 import pandas as pd
+from IPython.display import Image, display
 
-# Add repository root to path
-REPO_ROOT = Path("..").resolve()
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
+ROOT = Path.cwd().resolve()
+while not (ROOT / "data" / "metadata" / "phase2").is_dir() and ROOT != ROOT.parent:
+    ROOT = ROOT.parent
+M = ROOT / "data" / "metadata" / "phase2"
+F = ROOT / "figures" / "phase2"
+pd.set_option("display.precision", 3)
+pd.set_option("display.width", 160)
+print(json.loads((M / "phase1_parity.json").read_text()))"""),
+    ("md", "## 1. Training runs (from each run's `meta.json`)"),
+    ("code", """meta = pd.read_csv(M / "run_meta.csv")
+meta[["model_id", "seed", "graph", "params", "epochs_run", "best_epoch", "best_val_mae",
+      "train_seconds", "stop_reason", "device"]].sort_values(["model_id", "seed"])"""),
+    ("md", "## 2. Test MAE by horizon (Phase 2 = mean ± sd over seeds)"),
+    ("code", """s = pd.read_csv(M / "metrics_summary.csv")
+t = s[(s.split == "test") & (s.period == "all")]
+tab = t.pivot(index="model", columns="horizon", values="mae_mean")[["5min", "15min", "30min", "60min"]]
+tab["sd_60min"] = t[t.horizon == "60min"].set_index("model")["mae_sd"]
+tab.sort_values("60min")"""),
+    ("code", """display(Image(filename=str(F / "fig_horizon_mae.png"), width=650))"""),
+    ("md", "## 3. Peak vs off-peak, RMSE and MAPE at 60 minutes"),
+    ("code", """t60 = s[(s.split == "test") & (s.horizon == "60min")]
+t60.pivot(index="model", columns="period", values="mae_mean")[["all", "peak", "off_peak", "morning_peak", "evening_peak"]].sort_values("all")"""),
+    ("code", """t60[t60.period == "all"].set_index("model")[["rmse_mean", "mape_mean"]].sort_values("rmse_mean")"""),
+    ("md", "## 4. Paired bootstrap (positive = candidate has lower MAE)"),
+    ("code", """b = pd.read_csv(M / "bootstrap.csv")
+b["pair"] = b.candidate + " vs " + b.baseline
+b[b.period == "all"].pivot(index="pair", columns="horizon", values="mae_difference")[["5min", "15min", "30min", "60min"]]"""),
+    ("code", """b[(b.horizon == "60min")][["pair", "period", "mae_difference", "ci95_low", "ci95_high"]]"""),
+    ("code", """display(Image(filename=str(F / "fig_graph_ablation.png"), width=800))"""),
+    ("md", "## 5. Pre-registered hypotheses (verdicts computed by code)"),
+    ("code", """h = pd.read_csv(M / "hypotheses.csv")
+h.groupby("id", sort=False).first()[["statement", "overall_verdict"]]"""),
+    ("code", """h[["id", "horizon", "period", "comparison", "mae_difference", "ci95_low", "ci95_high", "verdict"]]"""),
+    ("code", """print(h[h.id == "H5"].note.iloc[0])"""),
+    ("md", "## 6. Where are the errors? Sensors, degree, regions"),
+    ("code", """sm = pd.read_csv(M / "sensor_metrics.csv", dtype={"sensor_id": str})
+x = sm[(sm.split == "test") & (sm.period == "all") & (sm.horizon == "60min")]
+w = x.pivot(index="sensor_id", columns="model", values="mae")
+cols = [c for c in ["xgboost_ha", "gru_local", "gat_identity", "gat", "dcrnn"] if c in w]
+w[cols].sort_values(cols[0], ascending=False).head(10)"""),
+    ("code", """if {"gat", "gat_identity"} <= set(w.columns):
+    g = (w.gat_identity - w.gat).rename("gain_vs_identity").to_frame()
+    g = g.join(x.drop_duplicates("sensor_id").set_index("sensor_id")[["graph_degree", "region"]])
+    display(g.groupby(pd.cut(g.graph_degree, [0, 4, 8, 12, 16, 100], right=False), observed=True).gain_vs_identity.describe())
+    display(g.groupby("region").gain_vs_identity.mean().sort_values())
+display(Image(filename=str(F / "fig_error_by_degree.png"), width=600))"""),
+    ("code", """r = pd.read_csv(M / "region_metrics.csv")
+r[(r.split == "test") & (r.period == "all") & (r.horizon == "60min")].pivot(index="region", columns="model", values="mae")[cols]"""),
+    ("code", """for f in ["fig_map_morning_60min.png", "fig_map_evening_60min.png", "fig_congestion_map_evening_15min.png"]:
+    display(Image(filename=str(F / f), width=800))"""),
+    ("md", "## 7. Proxy congestion onsets"),
+    ("code", """ev = pd.read_csv(M / "events.csv")
+ev.pivot(index="model", columns="horizon", values="recall_onset")"""),
+    ("code", """on = pd.read_csv(M / "onset_errors.csv")
+on.pivot(index="model", columns="horizon", values="mae_onset")"""),
+    ("code", """display(Image(filename=str(F / "fig_case_study.png"), width=800))"""),
+    ("md", "## 8. Seeds and attention"),
+    ("code", """display(Image(filename=str(F / "fig_seed_spread.png"), width=800))
+if (M / "attention_stats.csv").is_file():
+    a = pd.read_csv(M / "attention_stats.csv")
+    display(a.groupby("period")[["entropy", "mass_self", "mass_neighbours", "mass_downstream", "mass_upstream"]].mean())
+if (F / "fig_attention_example.png").is_file():
+    display(Image(filename=str(F / "fig_attention_example.png"), width=800))"""),
+    ("md", "## 9. Simulated signal control"),
+    ("code", """syn = json.loads((M / "signal_sim_summary.json").read_text())
+pd.DataFrame({sc: {p: v["mean_delay_s"] for p, v in d.items()} for sc, d in syn["scenarios"].items()})"""),
+    ("code", """p = M / "signal_sim_real_summary.json"
+if p.is_file():
+    real = json.loads(p.read_text())
+    print(real["metadata"]["disclaimer"])
+    display(pd.DataFrame(real["policies"]).T)
+    display(pd.DataFrame(real["paired_vs_xgboost_ha"]).T)
+    display(Image(filename=str(F / "fig_signal_real_forecasts.png"), width=600))"""),
+]
 
-METADATA_DIR = REPO_ROOT / "data" / "metadata" / "phase2"
-FIGURES_DIR = REPO_ROOT / "figures" / "phase2"
 
-print(f"Repository Root: {REPO_ROOT}")
-print(f"Metadata Dir:    {METADATA_DIR}")
-"""))
+def build_notebook() -> nbf.NotebookNode:
+    nb = nbf.v4.new_notebook()
+    nb.metadata["kernelspec"] = {"name": "python3", "display_name": "Python 3", "language": "python"}
+    nb.cells = [nbf.v4.new_markdown_cell(t) if k == "md" else nbf.v4.new_code_cell(t) for k, t in CELLS]
+    return nb
 
-    # 3. Overall Performance
-    cells.append(nbf.v4.new_markdown_cell("""## 1. Overall Forecast Performance Across Horizons (5, 15, 30, 60 min)
 
-We load the aggregated metrics summary across all seeds on the held-out test split.
-"""))
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--execute", action="store_true")
+    args = ap.parse_args()
+    nb = build_notebook()
+    if args.execute:
+        from nbclient import NotebookClient
 
-    cells.append(nbf.v4.new_code_cell("""summary_path = METADATA_DIR / "metrics_summary.csv"
-if summary_path.is_file():
-    df_summary = pd.read_csv(summary_path)
-    test_all = df_summary[(df_summary["split"] == "test") & (df_summary["period"] == "all")]
-    pivot_mae = test_all.pivot(index="model", columns="horizon", values="mae_mean")[["5min", "15min", "30min", "60min"]]
-    display(pivot_mae.style.format("{:.3f}").highlight_min(color="lightgreen", axis=0))
-else:
-    print(f"Notice: {summary_path.name} not found. Run scripts/phase2_eval_all.py to generate tables.")
-"""))
-
-    # 4. Peak vs Off-Peak
-    cells.append(nbf.v4.new_markdown_cell("""## 2. Rush Hour vs. Off-Peak Error Stratification
-
-Non-recurrent congestion during peak hours (07:00–10:00 and 16:00–19:00 on weekdays) presents the primary forecasting challenge. We examine whether graph models mitigate error spikes during peak congestion.
-"""))
-
-    cells.append(nbf.v4.new_code_cell("""if summary_path.is_file():
-    peak_comp = df_summary[
-        (df_summary["split"] == "test")
-        & (df_summary["horizon"] == "60min")
-        & (df_summary["period"].isin(["peak", "off_peak"]))
-    ]
-    if not peak_comp.empty:
-        pivot_peak = peak_comp.pivot(index="model", columns="period", values="mae_mean")[["peak", "off_peak"]]
-        pivot_peak["peak_increase_%"] = (pivot_peak["peak"] - pivot_peak["off_peak"]) / pivot_peak["off_peak"] * 100
-        display(pivot_peak.style.format({"peak": "{:.3f}", "off_peak": "{:.3f}", "peak_increase_%": "+{:.1f}%"}))
-"""))
-
-    # 5. Graph Architecture & Topology Ablation
-    cells.append(nbf.v4.new_markdown_cell("""## 3. Graph Architecture & Topology Ablations
-
-To isolate the genuine value of road network topology, we compare:
-1. **GAT (Bidirectional)**: GAT with real highway adjacency.
-2. **GAT Identity (Control)**: GAT architecture with self-loops only (isolating temporal attention without spatial neighbours).
-3. **GAT Shuffled (Control)**: GAT with permuted sensor labels (preserving node degree multiset while destroying spatial connectivity).
-"""))
-
-    cells.append(nbf.v4.new_code_cell("""fig_ablation_path = FIGURES_DIR / "fig_graph_ablation.png"
-if fig_ablation_path.is_file():
-    from IPython.display import Image
-    display(Image(filename=str(fig_ablation_path)))
-else:
-    print("Graph ablation figure pending evaluation runner.")
-"""))
-
-    # 6. Formal Hypotheses
-    cells.append(nbf.v4.new_markdown_cell("""## 4. Formal Hypothesis Testing (H0–H5)
-
-Evaluated via paired circular moving-block bootstrap (2-day blocks, 2000 resamples, seed 42).
-"""))
-
-    cells.append(nbf.v4.new_code_cell("""hyp_path = METADATA_DIR / "hypotheses.csv"
-if hyp_path.is_file():
-    df_hyp = pd.read_csv(hyp_path)
-    display(df_hyp[["id", "statement", "comparison", "mae_difference", "verdict"]])
-else:
-    print("Hypotheses table not found. Run scripts/phase2_eval_all.py to compute verdicts.")
-"""))
-
-    # 7. Congestion Onset Diagnostics
-    cells.append(nbf.v4.new_markdown_cell("""## 5. Congestion Onset Detection Diagnostics
-
-Evaluating precision and recall of predicting proxy congestion transitions (speed dropping below 60% of sensor free-speed).
-"""))
-
-    cells.append(nbf.v4.new_code_cell("""events_path = METADATA_DIR / "events.csv"
-if events_path.is_file():
-    df_events = pd.read_csv(events_path)
-    display(df_events[["model", "horizon", "precision_congestion", "recall_congestion", "recall_congestion_onset"]])
-else:
-    print("Events diagnostics table not found.")
-"""))
-
-    nb.cells = cells
-    NOTEBOOK_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with open(NOTEBOOK_PATH, "w", encoding="utf-8") as f:
-        nbf.write(nb, f)
-
-    return NOTEBOOK_PATH
+        NotebookClient(nb, timeout=600, kernel_name="python3",
+                       resources={"metadata": {"path": str(ROOT / "notebooks")}}).execute()
+    NB_PATH.write_text(nbf.writes(nb), encoding="utf-8")
+    print(f"Saved: {NB_PATH}{' (executed)' if args.execute else ''}")
+    return 0
 
 
 if __name__ == "__main__":
-    out = build_notebook()
-    print(f"Generated Phase 2 error analysis notebook: {out}")
-
+    sys.exit(main())

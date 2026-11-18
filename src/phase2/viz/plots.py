@@ -554,9 +554,11 @@ def render_all_figures(
     metrics_summary_df: pd.DataFrame,
     sensor_scores_df: pd.DataFrame,
     attention_path: Optional[Path | str] = None,
+    out_dir: Optional[Path | str] = None,
 ) -> Dict[str, Path]:
-    """Render all Phase 2 figures specified in plan 4.8."""
-    out_dir = ensure_figures_dir()
+    """Render all Phase 2 figures specified in plan 4.8 into ``out_dir``
+    (default ``figures/phase2/``)."""
+    out_dir = ensure_figures_dir(Path(out_dir) if out_dir else FIGURES_DIR)
     figures = {}
 
     figures["fig_horizon_mae"] = plot_horizon_mae(
