@@ -73,25 +73,51 @@ The best configuration selected by `src.phase2.cli pick` (lowest mean validation
 
 ---
 
-## 5. Compute & Runtime Benchmarks
+## 5. Measured search and final runs (Apple M3, MPS)
 
-### Measured Local Speed (Apple Silicon M3, 8 GB RAM):
-- **5% Data Subset (1,198 train origins)**:
-  - M3 MPS: ~1.2 s per epoch (warm). Peak RSS: ~780 MB (+1.1 GB driver memory).
-  - M3 CPU: ~3.0 s per epoch.
-- **Estimated Full Epoch on M3 MPS**:
-  - $1.2\text{ s} \times 20 \approx 24\text{ s}$ per full epoch.
+Search (seed 42, validation only, 20-minute cap per candidate; tracked copy in `data/metadata/phase2/search_gat.csv`):
 
-### Expected Colab T4 GPU Runtime (Training Strategy):
-- On Google Colab Nvidia T4 (CUDA), batched matrix multiplications are ~3–4x faster than M3 MPS.
-- Expected full epoch on T4: ~6–8 s per epoch.
-- Over 60 epochs with early stopping (patience 8; typical convergence around 25–35 epochs):
-  - **Search candidate run**: ~3.5 to 5 minutes per candidate (the CLI `--time-limit` cap applies **per candidate**, not per total search).
-  - **Total search (4 candidates, sequential)**: 4 × ~3.5–5 min = **~14 to 20 minutes total** (each candidate may use up to the per-candidate cap independently).
-  - **Final runs (3 seeds gat + 3 seeds gat_identity + 1 seed gat_shuffled = 7 runs)**: ~30 to 45 minutes total.
-  - Worst-case total on Colab T4: ~1.5 to 2.5 hours across all runs.
+| Candidate | Params | Epochs | Stop | Val MAE (mean of 4 horizons) | Val MAE 60 min |
+|---|---|---|---|---|---|
+| 0 (h32, 2 heads, 1 layer, GRU) | 6,276 | 60 | max epochs | 2.966 | 3.828 |
+| **1 (h64, 2 heads, 1 layer, GRU)** | 22,788 | 46 | time cap | **2.921** | 3.729 |
+| 2 (h32, 4 heads, 2 layers, GRU) | 7,428 | 32 | time cap | 2.984 | 3.852 |
+| 3 (h32, 2 heads, 1 layer, conv) | 6,148 | 50 | early stop | 2.993 | 3.864 |
 
----
+Candidate 1 was picked (`configs/phase2/final/gat.yaml`). Final runs (40-minute cap, 60 epochs, patience 8; from each `seed<S>_meta.json`):
+
+| Run | Seeds | Epochs | Best epoch | Best val MAE | s / epoch | Minutes per run | Stop |
+|---|---|---|---|---|---|---|---|
+| `gat` | 42, 43, 44 | 60 | 54-60 | 2.916-2.923 | 26.4 | 26.4 | max epochs |
+| `gat_identity` | 42, 43, 44 | 46-55 | 38-47 | 3.006-3.011 | 26.3 | 20-24 | early stop |
+| `gat_shuffled` | 42 | 60 | 54 | 2.998 | 26.4 | 26.4 | max epochs |
+
+The `gat` and `gat_shuffled` runs were still improving slightly when they reached the
+pre-registered 60-epoch limit (best epoch 54-60), so they may be a little under-trained. The
+limit was not raised after seeing results. Whole GAT family (search plus 7 final runs): about
+4 h 05 min on the M3.
+
+### Test results (source speed units)
+
+| Model | 5 min | 15 min | 30 min | 60 min |
+|---|---|---|---|---|
+| `gru_local` | 2.369 | 2.975 | 3.560 | 4.379 ± 0.006 |
+| `gat_identity` | 2.367 | 2.971 | 3.554 | 4.364 ± 0.003 |
+| `gat_shuffled` (1 seed) | 2.365 | 2.963 | 3.536 | 4.324 |
+| `gat` | 2.331 | 2.905 | 3.443 | 4.175 ± 0.007 |
+
+60-minute paired bootstrap (positive = first model has lower MAE):
+
+| Comparison | Interval |
+|---|---|
+| GAT vs GAT identity | +0.189 [+0.154, +0.221] |
+| GAT vs GAT shuffled | +0.149 [+0.124, +0.174] |
+| GAT shuffled vs GAT identity | +0.040 [+0.026, +0.054] |
+| GAT vs GRU Local | +0.205 [+0.168, +0.238] |
+
+H1 is supported. H2 is contradicted: part a is supported, but part b is contradicted because the shuffled graph also beat the identity graph.
+
+Attention (seed 42, 12 test origins): 0.10 on the sensor itself and 0.90 on neighbours, almost identical at peak and off-peak (`attention_stats.csv`).
 
 ## 6. Scientific Limitations & Claims Disclaimer
 

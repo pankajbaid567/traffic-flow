@@ -5,6 +5,22 @@
 **Git Branch:** `main` (Latest commit pushed to remote: `origin/main`)  
 **Date:** 2026-11-14  
 
+> **Correction (2026-11-17).** Parts of this handover were wrong:
+> - `src/phase2/signal_sim/simulator.py` was committed empty. The "44.4% delay reduction" and "spillback 64% → 26%" figures were not reproducible. The rebuilt simulator (`0d1db93`) shows adaptive vs fixed timing matters a lot, while a better forecast saves only about 1 s per vehicle.
+> - The Sensor 717468 case-study figure was hand-drawn and has been removed.
+> - The paper's GAT/DCRNN numbers were typed in. The paper now reads results from `data/metadata/phase2/` and shows "pending" until training and evaluation are done.
+>
+> See `reports/phase2/qa_claims_checklist.md` and `reports/person_e_phase2_report.md`. The training and evaluation steps below are still correct.
+
+> **Update (2026-11-18): all steps below are done.**
+> - Every model family was trained locally on an Apple M3 (`--device mps`, 11.2 h total) instead of Colab. Free-tier Colab sessions kept dying and GPU allocation was refused, and one search on mixed devices would have been unfair under wall-clock caps.
+> - Training was followed by `phase2_eval_all.py`, the attention statistics, both signal experiments, the paper, the slides and the notebook.
+> - Results: README section P2.3 and `reports/person_e_phase2_report.md`.
+> - Exact commands and timings: `reports/phase2/reproduction.md`.
+> - Picked configs are in `configs/phase2/final/`, checkpoints in `models/phase2/`.
+> - Test count is now 107. The paper also has a measured case-study figure (Fig. 9).
+> - The sections below are kept as the original plan.
+
 ---
 
 ## 🎯 Executive Summary for the Team
@@ -21,16 +37,15 @@ All 25 granular commits representing Person E's deliverables have been pushed to
    - Full 80 simulation runs evaluated and serialized:
      - `data/metadata/phase2/signal_sim_results.csv`
      - `data/metadata/phase2/signal_sim_summary.json`
-2. **Four Publication-Quality 300+ DPI Figures (`figures/phase2/`):**
-   - `fig_case_study.png` (Direct resolution of the Sensor 717468 crash event)
-   - `fig_signal_delay_comparison.png` (44.4% simulated delay reduction during shockwaves)
-   - `fig_signal_queue_dynamics.png` (Queue accumulation & spillback prevention)
-   - `fig_signal_spillback_reduction.png` (Spillback cut from 64% to 26% and fuel emissions saved)
+2. **Three simulated-signal figures (`figures/phase2/`):**
+   - `fig_signal_delay_comparison.png` (mean simulated delay by policy and scenario)
+   - `fig_signal_queue_dynamics.png` (simulated queue in the synthetic incident scenario)
+   - `fig_signal_spillback_reduction.png` (simulated spillback and fuel proxy)
 3. **Camera-Ready IEEE Conference Paper (`reports/paper_phase2/`):**
    - PDF: `phase2_ieee_paper.pdf` (1.5 MB, two-column IEEE format with embedded Times New Roman fonts and figures).
    - LaTeX source: `phase2_ieee_paper.tex` and `phase2_ieee_source.zip`.
    - Structured JSON: `paper_content.json` and audit report: `qa_report.json`.
-4. **All Unit Tests Passing (96 Tests):**
+4. **Unit tests (now 101 Phase 2 tests, all passing):**
    - Added `tests/test_phase2_signal.py` (10/10 passed).
    - Fixed timestamp unit parsing in `scripts/phase2_gat_attention_stats.py` and `tests/test_phase2_gat.py`.
    - Fixed module path bootstrap in `scripts/phase2_eval_all.py`.
@@ -39,9 +54,9 @@ All 25 granular commits representing Person E's deliverables have been pushed to
 
 ---
 
-## 📋 What Remains & Who Needs to Do What
+## 📋 Original task plan (completed 2026-11-18)
 
-No new code needs to be written. The only pending steps are **running the training on Google Colab** and **running the evaluation script on downloaded test predictions**.
+*Historical:* these were the remaining steps on 2026-11-14. They have all been carried out (see the update at the top).
 
 Here are your exact copy-paste steps:
 
@@ -207,8 +222,7 @@ When the professor asks:
 *"Why did you add Graph Neural Networks if tree models already got 3.68 MAE?"*
 
 **Team Answer:**  
-*"Phase 1 models were single-sensor models and were spatially blind. When an accident or shockwave occurred downstream, upstream sensors had no way to know, causing 45-minute prediction lags (as proved in the Sensor 717468 crash study).*  
-*Phase 2 graph models communicate along the road graph to anticipate shockwaves before they arrive. In our simulated adaptive signal control benchmark, this anticipation prevented intersection queue spillback, reducing commuter delay by 44.4% and cutting freeway mainline spillbacks from 64% to 26%."*
+*"Phase 1 models used only each sensor's own history, and their error grew with horizon. Congestion propagates along a corridor, so neighbouring sensors may carry useful information. Phase 2 tests that directly: GAT and DCRNN against the same architectures without the graph (`gru_local`, `gat_identity`) and with a wrong graph (`gat_shuffled`), on the same split, with paired-bootstrap verdicts fixed in advance. Whether the graph helps is whatever those verdicts say. In a separate software simulation, adaptive signal timing beat fixed timing by a wide margin, while better forecasts added only about 1 s per vehicle."*
 
 ---
 

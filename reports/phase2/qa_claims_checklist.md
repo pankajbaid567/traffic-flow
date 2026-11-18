@@ -1,52 +1,62 @@
 # Phase 2 QA & Claims Verification Checklist
 
-**Author:** Person E (Member 5, `phase2/m5-signal-paper`)  
-**Scope:** Whole Phase 2 Codebase, Reports, Figures, and IEEE Manuscript (`reports/paper_phase2/`)  
-**Date:** 2026-11-13  
-**Status:** **AUDIT PASSED** (All claims rigorously verified and compliant)
+**Original author:** Person E (Member 5, `phase2/m5-signal-paper`), 2026-11-13
+**Re-audited:** 2026-11-17, after the Phase 2 branches were merged
+**Scope:** Phase 2 code, reports, figures and the IEEE manuscript (`reports/paper_phase2/`)
+**Final check:** 2026-11-18, after all training and evaluation finished
+**Status:** **CLOSED.** Every Phase 2 number in the paper, slides and notebook is read from evaluation outputs; wording rules pass (Section 1); automated checks pass (Section 3).
+
+> **Correction (2026-11-17).** The 2026-11-13 version of this file said "AUDIT PASSED (all claims rigorously verified)". That was wrong:
+> - The GAT / DCRNN / GRU Local / control test MAEs and the H1–H4 "SUPPORTED" verdicts in the paper were typed into `scripts/build_phase2_paper.py`. No model had been trained and no evaluation output existed.
+> - `src/phase2/signal_sim/simulator.py` was committed empty (commit `2034792`), so the signal numbers it cited (incident delay 202.6 s → 112.6 s, "−44.4%", spillback 64.0% → 26.0%) could not be reproduced. The simulator was rebuilt in `0d1db93`, and its results do not support those claims.
+> - The Sensor 717468 "case study" figure was drawn from hand-made curves, not from data or model output. It has been removed.
+> - GRU Local candidate 0 has 5,124 parameters (as listed), but the paper's Table IV latency, epoch-time and tree-model size figures had no source.
+>
+> The paper builder now reads every Phase 2 forecasting number from `data/metadata/phase2/`. All three model families were trained on 2026-11-17/18 and evaluated, so nothing in the paper is pending.
 
 ---
 
-## 1. Ground Rules & Permitted vs. Prohibited Claims Audit
+## 1. Wording rules (plan Section 5.5)
 
-Per `reports/phase2_plan.md` Section 5.5, all claims in code, figures, technical fact sheets, and manuscripts must comply with strict scientific integrity rules.
-
-| Rule ID | Permitted Formulation | Prohibited / Over-claiming Formulation | Audit Status | Code / Text Verification |
+| Rule | Allowed | Not allowed | Status | Where checked |
 |---|---|---|---|---|
-| **R1 (Actuation)** | "In a synthetic simulation, policy P changed average delay by..." | "Live traffic control", "Actuated Los Angeles traffic", "Real-world traffic management" | **PASSED** | Labeled "simulated" in `src/phase2/signal_sim/`, `scripts/phase2_run_signal_sim.py`, and `reports/paper_phase2/`. |
-| **R2 (Units)** | "Source speed units (likely mph, unverified)" | "Speeds in mph", "Miles per hour" stated as ground truth | **PASSED** | Verified across all tables and axis labels. |
-| **R3 (Timezone)** | "Stored clock time (timezone unverified)" | "UTC", "PST/PDT", "Local Los Angeles time" | **PASSED** | Explicitly stated in data contracts, `fact_sheet_evaluation.md`, and paper. |
-| **R4 (Geography)** | "Coordinate bounding boxes / coordinate regions" | "I-10 freeway", "I-405 freeway", "US-101 highway" asserted as proven sensor IDs | **PASSED** | All spatial groupings explicitly use coordinate proxies from Phase 1. |
-| **R5 (Attention)** | "Attention weights represent learned statistical feature aggregation" | "Attention weights prove physical shockwave propagation or causal vehicle movement" | **PASSED** | Prominent warning banner in `fact_sheet_gat.md` and Paper Section IX. |
-| **R6 (Generality)** | "On this 70/10/20 chronological split of METR-LA (March–June 2012)" | "Our model outperforms across all traffic networks / worldwide" | **PASSED** | Bound to held-out test partition. |
-| **R7 (Graph Gain)** | "Graph models supported by H1/H2 bootstrap CI [CI_low, CI_high] > 0" | "Graph models are universally superior" without CI interval | **PASSED** | All comparisons backed by paired moving-block bootstrap intervals. |
+| R1 Actuation | "In a synthetic simulation, policy P changed average delay by ..." | live / real-world traffic control | PASS | paper Section VIII, both signal summary disclaimers |
+| R2 Units | "source speed units (likely mph, unverified)" | mph stated as fact | PASS | paper tables and axes |
+| R3 Timezone | "stored clock (timezone unverified)" | UTC / PST stated as fact | PASS | paper Sections IV and VIII |
+| R4 Geography | "coordinate regions" | named freeways | PASS | paper Section VIII |
+| R5 Attention | attention = what the model used | attention proves shockwave propagation | PASS | paper Sections II and VIII, `fact_sheet_gat.md` |
+| R6 Generality | "on this chronological split of METR-LA" | generalisation beyond the split | PASS | paper Section VIII |
+| R7 Graph gain | claim only what the H1/H2 verdicts support | "graph is better" without verdicts | PASS (graph gains are quoted with intervals; H2 is reported as contradicted with both parts, and the shuffled-graph gain is stated) | paper Sections VI and XI |
 
----
+## 2. Numerical claims and their sources
 
-## 2. Numerical Claims & Evidence Traceability Matrix
+| Claim in the paper | Value | Source |
+|---|---|---|
+| Phase 1 test MAE (all five models) | e.g. persistence 2.814 / 3.499 / 4.206 / 5.380; XGBoost+HA 60 min 3.688 | `data/metadata/phase1_metrics.csv`; harness reproduces them exactly (`tests/test_phase2_evaluation.py`) |
+| Valid 5-min test targets | 1,245,052 | `tests/test_phase2_core.py` parity test |
+| Phase 2 test MAE (gru_local, gat, gat_identity, gat_shuffled, dcrnn, dcrnn_identity) | e.g. 60 min: GAT 4.175 ± 0.007, DCRNN 3.734 ± 0.036, GRU Local 4.379 ± 0.006 | `data/metadata/phase2/metrics_summary.csv` |
+| Bootstrap intervals | e.g. GAT vs GAT identity at 60 min +0.189 [+0.154, +0.221] | `data/metadata/phase2/bootstrap.csv` |
+| H0–H5 verdicts | H1 supported, H2 contradicted (a supported, b contradicted), H3 supported, H4 supported, H5 descriptive, H0 contradicted | `data/metadata/phase2/hypotheses.csv` |
+| Training runs (epochs, stop reason, minutes, device) | Table I | `data/metadata/phase2/run_meta.csv` (from each run's `meta.json`) |
+| Search candidate parameter counts | e.g. GAT c0 6,276; DCRNN c2 131,009 | computed from the run files at build time; also asserted in `tests/test_phase2_gat.py`, `tests/test_phase2_dcrnn.py`; matches `search_<family>.csv` |
+| Attention summaries | self 0.096-0.098, neighbours 0.902-0.904 | `data/metadata/phase2/attention_stats.csv` |
+| Signal experiment A (synthetic, 80 runs) | e.g. incident: fixed 297.5 s, local predictive 26.3 s, graph predictive 25.7 s | `data/metadata/phase2/signal_sim_summary.json`; forecast noise sized from measured test MAEs (XGBoost 32 2.97, GAT 2.905 at 15 min) |
+| Signal experiment B (real speeds and forecasts, 3,780 runs) | e.g. DCRNN forecast +0.01 s [-0.02, +0.04] vs XGBoost + HA; perfect forecast +0.40 s | `data/metadata/phase2/signal_sim_real_summary.json` |
 
-Every single quantitative figure or percentage in `reports/paper_phase2/phase2_ieee_paper.pdf` is tied to an underlying artifact on disk:
+Spot checks done by hand on 2026-11-18: abstract, Tables I-V and VIII, the H0/H2 paragraphs and the conclusion against the CSV/JSON files above; no mismatches.
 
-| Claimed Metric | Reported Value | Artifact Source | Disk Location |
-|---|---|---|---|
-| **Phase 1 Persistence Test MAE** | 2.814, 3.499, 4.206, 5.380 | `phase1_metrics.csv` | `data/metadata/phase1_metrics.csv` |
-| **Phase 1 XGBoost+HA 60m Test MAE** | 3.688 source units | `phase1_metrics.csv` | `data/metadata/phase1_metrics.csv` |
-| **GAT Candidate 0 Parameters** | 6,276 parameters | `test_phase2_gat.py` | `tests/test_phase2_gat.py::test_parameter_counts` |
-| **DCRNN Candidate 2 Parameters** | 131,009 parameters | `test_phase2_dcrnn.py` | `tests/test_phase2_dcrnn.py::test_parameter_counts` |
-| **GRU Local Candidate 0 Parameters** | 5,124 parameters | `test_phase2_controls.py`| `tests/test_phase2_controls.py::test_parameter_counts` |
-| **Valid 5m Test Target Observations** | 1,245,052 samples (87.88%) | `split_contract.json` | `data/metadata/split_contract.json` |
-| **Incident Spillback: Fixed vs. Graph P2** | 64.0% reduced to 26.0% | `signal_sim_results.csv`| `data/metadata/phase2/signal_sim_results.csv` |
-| **Incident Mean Delay: Fixed vs. Graph P2**| 202.6 s reduced to 112.6 s (-44.4%) | `signal_sim_results.csv`| `data/metadata/phase2/signal_sim_results.csv` |
-| **Simulated Signal Runs** | 80 runs (5 seeds x 4 regimes x 4 policies)| `signal_sim_summary.json`| `data/metadata/phase2/signal_sim_summary.json` |
+## 3. Automated checks (2026-11-18)
 
----
+- `python scripts/phase2_check_phase1_frozen.py` → `OK (no Phase 1 file changed since phase1-final)`
+- `python -m unittest discover -s tests -p "test_phase2_*.py"` → `Ran 107 tests ... OK`
+- `python scripts/phase2_eval_all.py` → Phase 1 parity passed (max |ΔMAE| 0.0), Phase 1 bootstrap intervals reproduced
+- Banned-wording scan of `paper_content.json` and the slides (mph, UTC/PST, freeway names, propagation, real-world control, "pending"): only allowed negations found
+- LaTeX source compiles (tectonic) with no overfull boxes
+- Leakage: the filler and scaler are fitted on training data only (`tests/test_phase2_core.py`).
 
-## 3. Automated Code & Freezing Scan Results
+## 4. Known limitations stated in the paper
 
-- `scripts/phase2_check_phase1_frozen.py`:
-  - **Verdict:** **OK** (zero Phase 1 files modified since tag `138aa57`).
-- `python -m unittest discover -s tests -p "test_phase2_*.py"`:
-  - **Verdict:** **96 passed, 0 failed, 17 skipped** (all Phase 2 unit tests passing).
-- Leakage Checks:
-  - **Verdict:** **PASSED** (all scalers and imputers fitted strictly on training partition; zero test target contamination).
-
+1. GAT finals stopped at the 60-epoch limit and DCRNN at its 50-minute wall-clock cap (14 epochs); both may be under-trained.
+2. GAT shuffled and DCRNN identity have one seed each.
+3. One chronological split; intervals not adjusted for multiple comparisons.
+4. Signal results are simulated with an assumed demand rule.
