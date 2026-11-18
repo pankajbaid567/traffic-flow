@@ -1,0 +1,86 @@
+name: gat
+source_hash: 29334d899df2
+picked:
+- group: 0
+  candidate: 1
+  params:
+    dropout: 0.1
+    heads: 2
+    hidden: 64
+    layers: 1
+    temporal_encoder: gru
+  val_mae_mean: 2.920828
+runs:
+- model_id: gat
+  model: gat
+  graph: bidirectional
+  params:
+    dropout: 0.1
+    heads: 2
+    hidden: 64
+    layers: 1
+    temporal_encoder: gru
+  seeds:
+  - 42
+  - 43
+  - 44
+  graph_seed: 0
+  graph_base: bidirectional
+  train:
+    lr: 0.001
+    weight_decay: 0.0
+    batch_size: 32
+    epochs: 60
+    patience: 8
+    grad_clip: 5.0
+    max_minutes: 40
+    scheduler: plateau
+  group: 0
+- model_id: gat_identity
+  model: gat
+  graph: identity
+  params:
+    dropout: 0.1
+    heads: 2
+    hidden: 64
+    layers: 1
+    temporal_encoder: gru
+  seeds:
+  - 42
+  - 43
+  - 44
+  graph_seed: 0
+  graph_base: bidirectional
+  train:
+    lr: 0.001
+    weight_decay: 0.0
+    batch_size: 32
+    epochs: 60
+    patience: 8
+    grad_clip: 5.0
+    max_minutes: 40
+    scheduler: plateau
+  group: 0
+- model_id: gat_shuffled
+  model: gat
+  graph: shuffled
+  params:
+    dropout: 0.1
+    heads: 2
+    hidden: 64
+    layers: 1
+    temporal_encoder: gru
+  seeds:
+  - 42
+  graph_seed: 0
+  graph_base: bidirectional
+  train:
+    lr: 0.001
+    weight_decay: 0.0
+    batch_size: 32
+    epochs: 60
+    patience: 8
+    grad_clip: 5.0
+    max_minutes: 40
+    scheduler: plateau
+  group: 0

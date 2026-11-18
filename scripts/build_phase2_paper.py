@@ -57,7 +57,7 @@ from reportlab.platypus import (
     TableStyle,
 )
 
-OUT = ROOT / "reports" / "paper_phase2"
+OUT = Path(os.environ.get("PHASE2_PAPER_OUT", ROOT / "reports" / "paper_phase2"))
 TITLE = "Spatiotemporal Graph Attention and Diffusion Forecasting on METR-LA"
 SUBTITLE = "with Simulated Adaptive Traffic Signal Control"
 
@@ -73,6 +73,35 @@ REFERENCES = [
     'G. C. Cawley and N. L. C. Talbot, "On over-fitting in model selection and subsequent selection bias in performance evaluation," Journal of Machine Learning Research, vol. 11, pp. 2079-2107, 2010.',
     'M. J. Lighthill and G. B. Whitham, "On kinematic waves II. A theory of traffic flow on long crowded roads," Proc. Royal Society of London. Series A, vol. 229, no. 1178, pp. 317-345, 1955.',
 ]
+
+
+def _column_widths(headers, rows, style, total: float = 252.0) -> List[float]:
+    """Column widths that fit header words and short cells unbroken, summing to the column width.
+
+    Each column first gets its minimum (longest header word, bold; whole cell when cells are
+    short, else longest word); the remaining width goes to columns in proportion to how much
+    wider their longest cell is than that minimum.
+    """
+    from reportlab.pdfbase.pdfmetrics import stringWidth
+
+    def w(text, bold=False):
+        return stringWidth(text, style.fontName, style.fontSize) * (1.12 if bold else 1.0) + 4
+
+    mins, wants = [], []
+    for j, h in enumerate(headers):
+        cells = [str(r[j]) for r in rows]
+        longest = max([w(c) for c in cells] + [w(str(h), True)])
+        word_min = max([w(t, True) for t in str(h).split()] + [w(t) for c in cells for t in c.split()] + [0])
+        cell_min = max([w(c) for c in cells] + [0])
+        mins.append(max(word_min, cell_min if cell_min <= 75 else 0))
+        wants.append(max(longest, mins[-1]))
+    if sum(mins) >= total:
+        return [m * total / sum(mins) for m in mins]
+    spare = total - sum(mins)
+    extra = [x - m for x, m in zip(wants, mins)]
+    if sum(extra) <= spare:
+        return [x + (total - sum(wants)) / len(wants) for x in wants]
+    return [m + spare * e / sum(extra) for m, e in zip(mins, extra)]
 
 
 class PaperEquation(Flowable):
@@ -95,7 +124,9 @@ class PaperEquation(Flowable):
             )
         self.width = 252
         self.height = self.vector.height + 6
-        for font, size, code, x, y in self.vector.glyphs:
+        # matplotlib < 3.10 yields (font, size, code, x, y); newer adds a glyph index before x
+        self.glyphs = [(g[0], g[1], g[2], g[-2], g[-1]) for g in self.vector.glyphs]
+        for font, size, code, x, y in self.glyphs:
             fname = "Math" + Path(font.fname).stem
             if fname not in pdfmetrics.getRegisteredFontNames():
                 pdfmetrics.registerFont(TTFont(fname, font.fname))
@@ -104,7 +135,7 @@ class PaperEquation(Flowable):
         canvas = self.canv
         canvas.saveState()
         canvas.translate((self.width - self.vector.width) / 2, self.vector.depth + 2)
-        for font, size, code, x, y in self.vector.glyphs:
+        for font, size, code, x, y in self.glyphs:
             canvas.setFont("Math" + Path(font.fname).stem, size)
             canvas.drawString(x, y, chr(code))
         for x, y, width, height in self.vector.rects:
@@ -114,393 +145,565 @@ class PaperEquation(Flowable):
         canvas.drawRightString(252, self.vector.depth + 2, f"({self.number})")
 
 
-def render_paper_figures() -> Path:
-    """Prepare and copy publication figures into paper directory."""
+# Overridable for dry runs (tests write to temp folders, never to the repo)
+METRICS_DIR = Path(os.environ.get("PHASE2_METRICS_DIR", ROOT / "data" / "metadata" / "phase2"))
+FIG_SRC = Path(os.environ.get("PHASE2_FIG_DIR", ROOT / "figures" / "phase2"))
+HZ = ["5min", "15min", "30min", "60min"]
+PHASE1_MODELS = ["persistence", "historical_average", "random_forest_32", "xgboost_32", "xgboost_ha"]
+PHASE2_MODELS = ["gru_local", "gat_identity", "gat_shuffled", "dcrnn_identity", "gat", "dcrnn"]
+NAME = {
+    "persistence": "Persistence", "historical_average": "Historical average",
+    "random_forest_32": "Random Forest 32", "xgboost_32": "XGBoost 32", "xgboost_ha": "XGBoost + HA 36",
+    "gru_local": "GRU Local", "gat_identity": "GAT identity", "gat_shuffled": "GAT shuffled",
+    "dcrnn_identity": "DCRNN identity", "gat": "GAT", "dcrnn": "DCRNN",
+}
+FAMILY = {"persistence": "Base", "historical_average": "Base", "random_forest_32": "P1 ML",
+          "xgboost_32": "P1 ML", "xgboost_ha": "P1 ML", "gru_local": "No graph",
+          "gat_identity": "Control", "gat_shuffled": "Control", "dcrnn_identity": "Control",
+          "gat": "Graph", "dcrnn": "Graph"}
+PAPER_FIGURES = [
+    "fig_horizon_mae.png", "fig_peak_offpeak.png", "fig_graph_ablation.png", "fig_seed_spread.png",
+    "fig_error_by_degree.png", "fig_map_morning_60min.png", "fig_map_evening_60min.png",
+    "fig_congestion_map_evening_15min.png", "fig_case_study.png", "fig_attention_example.png",
+    "fig_signal_delay_comparison.png", "fig_signal_real_forecasts.png",
+]
+
+
+def load_phase2_results() -> Dict[str, Any]:
+    """Every Phase 2 number in the paper comes from these files (scripts/phase2_eval_all.py,
+    scripts/phase2_run_signal_sim.py). Nothing about trained models is typed in here."""
+    need = ["metrics_summary.csv", "metrics.csv", "bootstrap.csv", "hypotheses.csv", "run_meta.csv",
+            "events.csv", "phase1_parity.json"]
+    missing = [f for f in need if not (METRICS_DIR / f).is_file()]
+    if missing:
+        raise SystemExit(f"Run scripts/phase2_eval_all.py first; missing {missing}")
+    r: Dict[str, Any] = {k.split(".")[0]: pd.read_csv(METRICS_DIR / k) for k in need if k.endswith(".csv")}
+    r["parity"] = json.loads((METRICS_DIR / "phase1_parity.json").read_text())
+    for k in ("signal_sim_summary.json", "signal_sim_real_summary.json"):
+        p = METRICS_DIR / k
+        r[k.split(".")[0]] = json.loads(p.read_text()) if p.is_file() else None
+    p = METRICS_DIR / "attention_stats.csv"
+    r["attention_stats"] = pd.read_csv(p) if p.is_file() else None
+    s = r["metrics_summary"]
+    r["test"] = s[(s["split"] == "test")].set_index(["model", "period", "horizon"])
+    r["models"] = [m for m in PHASE2_MODELS if (m, "all", "60min") in r["test"].index]
+    from src.phase2.viz.report_figures import best_models
+
+    r["run_best"] = best_models(s)
+    return r
+
+
+def mae(r, model, h, period="all"):
+    return float(r["test"].loc[(model, period, h), "mae_mean"])
+
+
+def sd(r, model, h, period="all"):
+    return float(r["test"].loc[(model, period, h), "mae_sd"])
+
+
+def boot(r, base, cand, h, period="all"):
+    b = r["bootstrap"]
+    row = b[(b["baseline"] == base) & (b["candidate"] == cand) & (b["horizon"] == h) & (b["period"] == period)]
+    return None if row.empty else row.iloc[0]
+
+
+def ci_text(row) -> str:
+    return f"{row['mae_difference']:+.3f} [{row['ci95_low']:+.3f}, {row['ci95_high']:+.3f}]"
+
+
+def verdicts(r) -> Dict[str, str]:
+    h = r["hypotheses"]
+    return h.groupby("id", sort=False)["overall_verdict"].first().to_dict()
+
+
+def h2_parts(r) -> Tuple[str, str]:
+    """Combined verdict of H2 part a (gat beats gat_identity) and part b (shuffled no better)."""
+    from src.phase2.evaluation.hypotheses import combine
+
+    h = r["hypotheses"]
+    h = h[h["id"] == "H2"]
+    a = combine(h[h["statement"].str.contains("part a")]["verdict"].tolist())
+    b = combine(h[h["statement"].str.contains("part b")]["verdict"].tolist())
+    return a, b
+
+
+def candidate_parameter_counts() -> List[List[str]]:
+    """Exact parameter counts of the search candidates, built from the run files."""
+    import yaml
+    from src.phase2.registry import build_model
+
+    rows = []
+    base = {"num_nodes": 207, "in_channels": 7, "history": 12, "num_horizons": 4}
+    for run in ["gru_local", "gat", "dcrnn"]:
+        spec = yaml.safe_load((ROOT / "configs" / "phase2" / f"runs_{run}.yaml").read_text())
+        search = spec["groups"][0]["search"]
+        for i, params in enumerate(search["candidates"]):
+            model = build_model(search["model"], {**base, **params})
+            n = sum(p.numel() for p in model.parameters())
+            desc = ", ".join(f"{k}={v}" for k, v in params.items() if k != "dropout")
+            rows.append([f"{search['model']} c{i}", desc, f"{n:,}"])
+    return rows
+
+
+def count_phase2_tests() -> int:
+    import unittest
+
+    suite = unittest.defaultTestLoader.discover(str(ROOT / "tests"), pattern="test_phase2_*.py")
+
+    def walk(s):
+        for t in s:
+            if isinstance(t, unittest.TestSuite):
+                yield from walk(t)
+            else:
+                yield t
+
+    return sum(1 for _ in walk(suite))
+
+
+def render_paper_figures(results: Dict[str, Any]) -> Path:
+    """Copy the evaluation and signal figures (made from result files) into the paper folder."""
     assets = OUT / "figures"
     assets.mkdir(parents=True, exist_ok=True)
-
-    # 1. Figure 1: Horizon MAE Trajectory
-    fig, ax = plt.subplots(figsize=(3.5, 2.35), constrained_layout=True)
-    horizons = [5, 15, 30, 60]
-
-    # Verified Phase 1 and Phase 2 Benchmark Metrics
-    models_data = {
-        "Persistence": ([2.814, 3.499, 4.206, 5.380], "#777777", ":", "o"),
-        "Hist. Avg.": ([4.188, 4.188, 4.188, 4.189], "#b2df8a", "--", "s"),
-        "RF 32": ([2.452, 3.167, 3.871, 4.854], "#33a02c", "-", "^"),
-        "XGB+HA (P1)": ([2.312, 2.844, 3.275, 3.688], "#762a83", "-", "d"),
-        "GRU Local": ([2.418, 2.985, 3.522, 4.215], "#1f78b4", "--", "v"),
-        "GAT (P2)": ([2.285, 2.762, 3.148, 3.582], "#e31a1c", "-", "P"),
-        "DCRNN (P2)": ([2.241, 2.710, 3.115, 3.541], "#ff7f00", "-", "*"),
-    }
-
-    for name, (vals, color, ls, marker) in models_data.items():
-        ax.plot(horizons, vals, color=color, linestyle=ls, marker=marker, ms=3.5, lw=1.1, label=name)
-
-    ax.set_xlabel("Forecast Horizon (min)", fontsize=7.5)
-    ax.set_ylabel("MAE (source speed units)", fontsize=7.5)
-    ax.tick_params(axis="both", labelsize=6.5)
-    ax.set_xticks(horizons)
-    ax.grid(True, linestyle=":", alpha=0.35)
-    ax.legend(ncol=2, fontsize=5.8, loc="upper left", framealpha=0.85)
-
-    fig.savefig(assets / "fig_horizon_mae.png", dpi=350)
-    plt.close(fig)
-
-    # 2. Figure 2: Graph Ablation (GAT vs Identity vs Shuffled)
-    fig, ax = plt.subplots(figsize=(3.5, 2.2), constrained_layout=True)
-    ablation_data = {
-        "GAT Real Graph": [2.285, 2.762, 3.148, 3.582],
-        "GAT Identity (No Graph)": [2.392, 2.915, 3.420, 4.015],
-        "GAT Shuffled (Wrong Topology)": [2.445, 3.020, 3.590, 4.180],
-    }
-    x = np.arange(len(horizons))
-    width = 0.25
-    colors_ab = ["#2ca02c", "#1f77b4", "#d62728"]
-
-    for i, (m_name, vals) in enumerate(ablation_data.items()):
-        ax.bar(x + (i - 1) * width, vals, width, label=m_name, color=colors_ab[i], alpha=0.85, edgecolor="black", linewidth=0.6)
-
-    ax.set_xticks(x)
-    ax.set_xticklabels(["5m", "15m", "30m", "60m"], fontsize=6.5)
-    ax.set_ylabel("Test MAE (source units)", fontsize=7.5)
-    ax.tick_params(axis="y", labelsize=6.5)
-    ax.set_ylim(0, 4.6)
-    ax.grid(axis="y", linestyle=":", alpha=0.35)
-    ax.legend(fontsize=5.8, loc="upper left", framealpha=0.9)
-
-    fig.savefig(assets / "fig_graph_ablation.png", dpi=350)
-    plt.close(fig)
-
-    # Copy generated signal figures from figures/phase2/
-    src_fig = ROOT / "figures" / "phase2"
-    for fname in [
-        "fig_case_study.png",
-        "fig_signal_delay_comparison.png",
-        "fig_signal_queue_dynamics.png",
-        "fig_signal_spillback_reduction.png",
-    ]:
-        p = src_fig / fname
-        if p.exists():
-            shutil.copy(p, assets / fname)
-
+    for old in assets.glob("*.png"):
+        old.unlink()
+    for name in PAPER_FIGURES:
+        if (FIG_SRC / name).is_file():
+            shutil.copy(FIG_SRC / name, assets / name)
     return assets
 
 
 def build_paper_content(
     signal_summary: Dict[str, Any],
     authors_info: Dict[str, Any],
+    r: Dict[str, Any],
 ) -> Tuple[str, List[Tuple[str, Any]]]:
-    """Construct structured paper sections, tables, equations, and references."""
-    abstract = (
-        "We present a complete spatiotemporal deep learning benchmark and downstream "
-        "operational evaluation on the METR-LA traffic network. Building upon the frozen "
-        "Phase 1 machine learning baseline, we formulate multi-horizon speed forecasting (5, 15, "
-        "30, 60 minutes) across 207 loop detectors using Graph Attention Networks (GAT) and "
-        "Diffusion Convolutional Recurrent Neural Networks (DCRNN). Strict experimental fair-comparison "
-        "invariants are enforced: identical 70/10/20 chronological partitions, masked unavailable targets, "
-        "and paired circular moving-block day-bootstrap significance testing. To isolate topological "
-        "graph contributions from neural representational capacity, we evaluate structural controls "
-        "including an equally expressive non-graph recurrent model (GRU Local), an identity adjacency "
-        "ablation (GAT Identity), and a degree-preserving shuffled graph (GAT Shuffled). At the 60-minute "
-        "horizon, GAT and DCRNN achieve test MAEs of 3.582 and 3.541 source units, demonstrating statistically "
-        "supported gains over non-graph deep controls. To evaluate real-world utility beyond abstract "
-        "loss functions, we implement a simulated adaptive traffic signal control experiment modeling queueing "
-        "dynamics across 207 intersections under Webster delay formulation. In sudden incident shockwave "
-        "regimes, graph-predictive control proactively clears standing queues 15–30 minutes in advance, "
-        "reducing simulated mean vehicle delay by 44.4% and cutting freeway mainline spillback probability "
-        "from 64.0% to 26.0%. These results demonstrate that topological graph foresight provides non-linear "
-        "operational benefits where traditional local models fail."
-    )
-
+    """Paper sections; every result sentence is computed from the evaluation outputs."""
+    V = verdicts(r)
+    meta = r["run_meta"]
+    real = r["signal_sim_real_summary"]
+    have = set(r["models"])
     blocks: List[Tuple[str, Any]] = []
 
-    def heading(text: str) -> None:
-        blocks.append(("heading", text))
+    def heading(t): blocks.append(("heading", t))
+    def subheading(t): blocks.append(("subheading", t))
+    def para(t): blocks.append(("paragraph", t))
+    def table(c, h, rows): blocks.append(("table", {"caption": c, "headers": h, "rows": rows}))
+    def equation(n, k): blocks.append(("equation", f"{n} = ({k})"))
+    def reference(t): blocks.append(("reference", t))
 
-    def subheading(text: str) -> None:
-        blocks.append(("subheading", text))
+    def figure(f, c):
+        if (OUT / "figures" / f).is_file():
+            blocks.append(("figure", {"file": f, "caption": c}))
 
-    def para(text: str) -> None:
-        blocks.append(("paragraph", text))
+    best_p2 = min((m for m in ("gru_local", "gat", "dcrnn") if m in have), key=lambda m: mae(r, m, "60min"))
+    g60 = boot(r, "gat_identity", "gat", "60min")
+    gl60 = boot(r, "gru_local", "gat", "60min")
+    x60 = {m: boot(r, "xgboost_ha", m, "60min") for m in ("gat", "dcrnn", "gru_local")}
 
-    def table(caption: str, headers: Sequence[str], rows: Sequence[Sequence[Any]]) -> None:
-        blocks.append(("table", {"caption": caption, "headers": headers, "rows": rows}))
+    def word(v):
+        return {"supported": "supported", "contradicted": "contradicted", "inconclusive": "inconclusive",
+                "descriptive_only": "descriptive", "not_evaluated": "not evaluated"}.get(v, v)
 
-    def figure(filename: str, caption: str) -> None:
-        blocks.append(("figure", {"file": filename, "caption": caption}))
+    h2a, h2b = h2_parts(r)
+    s60 = boot(r, "gat_identity", "gat_shuffled", "60min")
+    gs60 = boot(r, "gat_shuffled", "gat", "60min")
+    h2_detail = ""
+    if h2a == "supported" and h2b == "contradicted" and s60 is not None:
+        h2_detail = (f" because a degree-preserving shuffled graph also beat the identity graph "
+                     f"({ci_text(s60)} at 60 min), although the real graph beat the shuffled one"
+                     + (f" ({ci_text(gs60)})" if gs60 is not None else ""))
 
-    def equation(name: str, number: int) -> None:
-        blocks.append(("equation", f"{name} = ({number})"))
+    d60 = boot(r, "dcrnn_identity", "dcrnn", "60min")
 
-    def reference(text: str) -> None:
-        blocks.append(("reference", text))
+    def vs_xgb(m):
+        """Plain-language per-horizon verdict of model m against XGBoost + HA."""
+        groups = {"lower": [], "higher": [], "same": []}
+        for hz in HORIZONS:
+            row = boot(r, "xgboost_ha", m, hz)
+            if row is None:
+                continue
+            k = "lower" if row["ci95_low"] > 0 else "higher" if row["ci95_high"] < 0 else "same"
+            groups[k].append(hz.replace("min", ""))
+        out = []
+        for k, txt in (("lower", "lower error at"), ("higher", "higher error at"), ("same", "no detectable difference at")):
+            if groups[k]:
+                out.append(f"{txt} {' and '.join([', '.join(groups[k][:-1]), groups[k][-1]] if len(groups[k]) > 1 else groups[k])} min")
+        return ", and ".join(out)
 
-    # --- Section I: Introduction ---
+    capped = []
+    rm = r["run_meta"]
+    for m in ("gat", "dcrnn"):
+        g = rm[rm["model_id"] == m]
+        if len(g) and (g["stop_reason"] != "early_stop").all():
+            lo, hi = int(g["epochs_run"].min()), int(g["epochs_run"].max())
+            why = "the wall-clock cap" if (g["stop_reason"] == "time_cap").all() else "the 60-epoch limit"
+            capped.append(f"{NAME[m]} stopped at {why} after {lo if lo == hi else f'{lo}-{hi}'} epochs")
+    capped_note = ("; ".join(capped) + ", so these models may be under-trained") if capped else ""
+
+    # ---------------- Abstract ----------------
+    graph_sentence = (
+        f"Against the same architecture without neighbours (identity graph), GAT changes 60-minute test MAE by "
+        f"{ci_text(g60)} (positive = lower error, 95% paired day-block bootstrap interval); the pre-registered "
+        f"graph hypothesis H2 is {word(V['H2'])}{h2_detail}. H1 (GAT beats a per-sensor GRU at 30 and 60 min) is "
+        f"{word(V['H1'])}."
+        + (f" DCRNN against its own identity-graph control changes 60-minute MAE by {ci_text(d60)}." if d60 is not None else "")
+    ) if g60 is not None else ""
+    xgb_sentence = (
+        f"Compared with the strongest Phase 1 model (XGBoost with historical-average features, 60-minute MAE "
+        f"{mae(r, 'xgboost_ha', '60min'):.3f}), the best Phase 2 model ({NAME[best_p2]}) reaches "
+        f"{mae(r, best_p2, '60min'):.3f}"
+        + (f"; DCRNN has {vs_xgb('dcrnn')} (H0 {word(V['H0'])})" if "dcrnn" in have else "") + "."
+    )
+    sim_sentence = ""
+    if real:
+        c = real["paired_vs_xgboost_ha"]
+        best_src = max((k for k in c if k.startswith("forecast_") and k != "forecast_perfect"),
+                       key=lambda k: c[k]["delay_reduction_vs_xgboost_ha_s"], default=None)
+        if best_src:
+            sim_sentence = (
+                " In a software simulation of one signalised approach driven by real test-period speeds and the "
+                f"models' real forecasts, the best Phase 2 forecast changed mean delay by "
+                f"{c[best_src]['delay_reduction_vs_xgboost_ha_s']:+.2f} s per vehicle relative to the Phase 1 "
+                f"forecast, and even a perfect forecast only by {c['forecast_perfect']['delay_reduction_vs_xgboost_ha_s']:+.2f} s; "
+                "the large effect is adaptive versus fixed timing. All signal results are simulated."
+            )
+    abstract = (
+        "We extend a frozen Phase 1 benchmark of local forecasters on METR-LA (207 loop detectors, 5-minute "
+        "speeds) with graph models that also see neighbouring sensors: a Graph Attention Network (GAT) and a "
+        "Diffusion Convolutional Recurrent Neural Network (DCRNN). All models share the Phase 1 chronological "
+        "70/10/20 split, 12-step history, horizons (5, 15, 30, 60 min) and valid-target mask. Hyperparameters "
+        "are chosen on validation only; final models are trained with three seeds (one for the shuffled and DCRNN identity controls). To "
+        "separate the road graph from model capacity we compare against a per-sensor GRU, an identity-graph "
+        "ablation and a degree-preserving shuffled graph. " + graph_sentence + " " + xgb_sentence + sim_sentence
+    )
+
+    # ---------------- I. Introduction ----------------
     heading("I. INTRODUCTION")
     para(
-        "Accurate metropolitan traffic speed forecasting is foundational for intelligent transportation "
-        "systems (ITS), ramp metering, and arterial signal optimization. However, standard machine learning "
-        "evaluations often fall into the 'benchmark trap': optimizing marginal loss metrics (such as MAE or "
-        "RMSE) in isolation without establishing whether learned predictions resolve physical traffic phenomena "
-        "or translate into tangible operational benefits."
+        "Short-term speed forecasts feed ramp metering and signal timing. In Phase 1 of this capstone we built a "
+        "local benchmark on METR-LA: persistence, historical average, Random Forest and XGBoost using only each "
+        "sensor's own history. The best model, XGBoost with 36 features including historical-average profiles, "
+        f"reached a 60-minute test MAE of {PHASE1_60['xgboost_ha']:.3f} source speed units, and error grew with "
+        "horizon, consistent with models that cannot see conditions at neighbouring sensors."
     )
     para(
-        "In Phase 1 of this capstone, we constructed an exhaustive local machine learning benchmark on METR-LA, "
-        "evaluating Persistence, Historical Average, Random Forest, and Gradient Boosted Trees (XGBoost) over "
-        "32 engineered own-sensor features. While a 36-feature XGBoost configuration augmented with historical "
-        "profiles achieved a competitive 60-minute test MAE of 3.688 source units, spatial error analysis revealed "
-        "a fundamental failure mode: sensor-independent models are structurally blind to spatial shockwave "
-        "propagation. When an abrupt capacity drop or incident occurs downstream, upstream sensors continue to "
-        "predict normal free-flow conditions until the physical congestion wave physically reaches their detector, "
-        "resulting in severe 30–60 minute forecast lags."
-    )
-    para(
-        "Phase 2 addresses this core limitation through two unified contributions: (1) We evaluate spatiotemporal "
-        "Graph Neural Networks (Graph Attention Networks and Diffusion Convolutions) against rigorous non-graph "
-        "and topological controls under a leak-free chronological protocol. (2) We bridge forecasting to real-world "
-        "utility by conducting a simulated adaptive traffic signal control experiment, demonstrating how multi-horizon "
-        "graph forecasts resolve intersection queue spillback and reduce commuter delay."
+        "Phase 2 asks one question, fixed before any result existed: does giving a forecaster neighbouring "
+        "sensors through the road graph improve forecasts over equally capable models without the graph, on the "
+        "same split, masks and history? We answer with pre-registered hypotheses whose verdicts are computed by "
+        "code from paired bootstrap intervals. 'No detectable gain' was declared an acceptable answer. A separate, "
+        "clearly simulated experiment feeds the forecasts into a signal-timing model."
     )
 
-    # --- Section II: Related Work & Physical Motivation ---
-    heading("II. RELATED WORK AND PHYSICAL MOTIVATION")
+    # ---------------- II. Related work ----------------
+    heading("II. RELATED WORK")
     para(
-        "Deep spatiotemporal traffic modeling was popularized by DCRNN [1], which integrated bidirectional graph "
-        "random walks with gated recurrent units. Concurrently, Graph Attention Networks (GAT) [2] introduced "
-        "dynamic, data-driven edge weighting. While tree boosting [3] and ensemble methods [4] excel on tabular "
-        "time-series features, they lack native mechanisms to route representations across non-Euclidean road networks."
-    )
-    para(
-        "From the perspective of traffic fluid dynamics (Lighthill-Whitham-Richards kinematic wave theory) [8], "
-        "traffic flow breakdowns generate backward-propagating shockwaves traveling upstream at characteristic "
-        "speeds of -15 to -25 km/h. A localized model observing sensor i cannot anticipate an incoming wave "
-        "originating at downstream sensor j. By exchanging representations along the directed road adjacency graph, "
-        "graph neural networks can mathematically identify bottleneck formation before local speeds degrade."
+        "DCRNN [1] combines bidirectional diffusion on the road graph with gated recurrent units. Graph Attention "
+        "Networks [2] learn data-dependent weights over a node's neighbours. Tree ensembles [3], [4] are strong on "
+        "engineered features but have no built-in way to use the graph. Kinematic-wave theory [8] motivates using "
+        "neighbours, since congestion propagates along a corridor. Model-selection bias [7] motivates choosing "
+        "hyperparameters on validation only and reporting controls tuned the same way."
     )
 
-    # --- Section III: Methodology & Architectures ---
-    heading("III. METHODOLOGY AND ARCHITECTURES")
+    # ---------------- III. Methods ----------------
+    heading("III. MODELS")
+    para(
+        "Every deep model receives x of shape [12, 207, 7]: z-scored causally filled speed, a missing-reading "
+        "flag, sine/cosine of time of day and day of week, and a weekend flag; it outputs z-scored speed for the "
+        "four horizons. The loss is masked MAE in source speed units on valid targets only."
+    )
     subheading("A. Graph Attention Network (GAT)")
-    para(
-        "Our GAT architecture processes an input history of 12 five-minute steps (1 hour) across N=207 sensors. "
-        "Each sensor's feature vector contains 7 channels: z-scored filled speed, missingness indicator, sine/cosine "
-        "of time-of-day, and sine/cosine of day-of-week. A shared temporal GRU encoder maps each sensor's history into "
-        "a latent embedding. Multi-head masked attention then updates node states across road network neighbors:"
-    )
+    para("A shared temporal encoder (GRU or 1-D convolution) embeds each sensor's last hour (12 steps); multi-head masked attention "
+         "mixes embeddings over graph neighbours (bidirectional road graph plus self-loops):")
     equation("GAT", 1)
-    para(
-        "Pairwise attention logits are masked with -10^9 for disconnected sensor pairs (A_ij = 0). Outputs from K heads "
-        "are projected through a linear transformation with residual skip connections and LayerNorm. A multi-layer "
-        "perceptron then predicts residual speed deltas relative to the latest known speed observation across 4 horizons."
-    )
-
-    subheading("B. Diffusion Convolutional Recurrent Neural Network (DCRNN)")
-    para(
-        "DCRNN models spatial traffic diffusion through bidirectional random walks over the directed road graph A:"
-    )
+    para("Logits of unconnected pairs are set to -10^9. Head outputs pass through a projection with a residual "
+         "connection and a small head predicts the four horizons.")
+    subheading("B. DCRNN")
+    para("DCRNN applies K-hop forward and reverse random-walk diffusion on the directed graph inside a DCGRU "
+         "encoder-decoder:")
     equation("DIFFUSION", 2)
+    para("with P_f = D_out^-1 A and P_r = D_in^-1 A^T.")
+    subheading("C. Controls")
     para(
-        "Here P_f and P_r represent forward and reverse transition matrices up to K=2 diffusion hops. An encoder-decoder "
-        "DCGRU architecture captures temporal autocorrelation and outputs multi-horizon speed forecasts."
+        "GRU Local is a shared per-sensor GRU with no spatial mixing. GAT identity and DCRNN identity are the same "
+        "architectures on a self-loop-only graph, so any difference to the full model is the effect of the "
+        "neighbours. GAT shuffled uses a node-permuted graph with the same degree structure (wrong neighbours). "
+        "Controls reuse the hyperparameters tuned for their main model, which can slightly understate them."
     )
 
-    subheading("C. Structural & Topological Controls")
+    # ---------------- IV. Protocol ----------------
+    heading("IV. EXPERIMENTAL PROTOCOL")
     para(
-        "To prevent attributing general deep learning capacity gains to graph connectivity [7], we evaluate three controls: "
-        "(1) GRU Local: An identical recurrent encoder-decoder with shared weights but zero spatial mixing between sensors. "
-        "(2) GAT Identity: GAT executed with identity adjacency (self-loops only), testing attention mechanisms without neighbor mixing. "
-        "(3) GAT Shuffled: Real road adjacency permuted by a fixed derangement, preserving node degree distribution while "
-        "connecting geometrically incorrect sensors."
-    )
-
-    # --- Section IV: Experimental Protocol ---
-    heading("IV. EXPERIMENTAL PROTOCOL AND FAIR COMPARISON")
-    para(
-        "All Phase 2 evaluations strictly inherit Phase 1 invariants: (1) Chronological 70/10/20 train/validation/test "
-        "split (March 1 to June 27, 2012 on stored clock). (2) Valid target masking: zero, negative, and non-finite "
-        "readings are treated as unavailable telemetry and excluded from loss and evaluation (1,245,052 valid 5-min test targets). "
-        "(3) Scalers and imputers fitted strictly on training data. (4) Paired circular moving-block bootstrap (2-day blocks, "
-        "2,000 resamples, seed 42) across calendar days to quantify statistical significance."
-    )
-
-    # Table I: Dataset Contract
-    table(
-        "TABLE I\nMETR-LA SPATIOTEMPORAL DATASET AND SPLIT CONTRACT",
-        ["Partition", "Stored Clock Range", "Origins", "Valid Rows (5m)", "Sensor Nodes", "Directed Edges"],
-        [
-            ["Train (70%)", "2012-03-01 to 2012-05-23", "23,967", "4,360,789", "207", "1,722"],
-            ["Val (10%)", "2012-05-23 to 2012-06-04", "3,416", "621,348", "207", "1,722"],
-            ["Test (20%)", "2012-06-04 to 2012-06-27", "6,844", "1,245,052", "207", "1,722"],
-        ],
-    )
-
-    # --- Section V: Forecasting Benchmark Results ---
-    heading("V. FORECASTING BENCHMARK AND HYPOTHESIS TESTING")
-    para(
-        "Table II presents the unified test evaluation across all models and horizons. At short horizons (5 min), "
-        "Persistence (2.814) and local ML models perform strongly due to autoregressive inertia. However, as the horizon "
-        "extends to 30 and 60 minutes, the value of spatiotemporal modeling becomes pronounced."
-    )
-
-    # Table II: Test Benchmark
-    table(
-        "TABLE II\nUNIFIED MULTI-HORIZON TEST BENCHMARK ON METR-LA (MAE / RMSE / MAPE)",
-        ["Model Family", "Model Identifier", "5 min MAE", "15 min MAE", "30 min MAE", "60 min MAE"],
-        [
-            ["Baseline", "Persistence", "2.814", "3.499", "4.206", "5.380"],
-            ["Baseline", "Historical Average", "4.188", "4.188", "4.188", "4.189"],
-            ["Phase 1 ML", "Random Forest 32", "2.452", "3.167", "3.871", "4.854"],
-            ["Phase 1 ML", "XGBoost 32", "2.362", "2.970", "3.564", "4.393"],
-            ["Phase 1 ML", "XGBoost + HA 36", "2.312", "2.844", "3.275", "3.688"],
-            ["Deep Control", "GRU Local (No Graph)", "2.418", "2.985", "3.522", "4.215"],
-            ["Graph Control", "GAT Identity (A=I)", "2.392", "2.915", "3.420", "4.015"],
-            ["Graph Control", "GAT Shuffled (Permuted)", "2.445", "3.020", "3.590", "4.180"],
-            ["Spatiotemporal", "GAT (Real Graph)", "2.285", "2.762", "3.148", "3.582"],
-            ["Spatiotemporal", "DCRNN (Diffusion)", "2.241", "2.710", "3.115", "3.541"],
-        ],
-    )
-
-    figure(
-        "fig_horizon_mae.png",
-        "Fig. 1. Test MAE trajectories across forecast horizons (5 to 60 min). Spatiotemporal graph models (GAT, DCRNN) consistently outperform deep and topological controls.",
-    )
-
-    para(
-        "Formal pre-registered hypotheses H1–H5 were tested using paired circular moving-block bootstrap confidence intervals: "
-        "(H1) GAT beats GRU Local at 30m and 60m: SUPPORTED (95% CI of MAE reduction strictly positive, [0.312, 0.435] at 60m). "
-        "(H2) GAT beats GAT Identity, while GAT Shuffled does not beat GAT Identity: SUPPORTED (proving real road adjacency is required). "
-        "(H3) Graph gain is larger in peak than off-peak: SUPPORTED (peak gain 0.518 vs off-peak gain 0.384). "
-        "(H4) Graph gain grows monotonically with horizon: SUPPORTED (5m: 0.133 < 15m: 0.223 < 30m: 0.374 < 60m: 0.633). "
-        "(H0) GAT and DCRNN vs XGBoost+HA: Deep models match and slightly exceed the 36-feature tree baseline at 60m (3.582 and 3.541 vs 3.688), "
-        "noting that deep models did not receive explicit historical average feature columns."
-    )
-
-    figure(
-        "fig_graph_ablation.png",
-        "Fig. 2. Structural ablation of network topology. Preserving node degree while shuffling edges (GAT Shuffled) eliminates graph gain, verifying dependency on physical road layout.",
-    )
-
-    # --- Section VI: Incident Resolution Case Study ---
-    heading("VI. CASE STUDY: RESOLUTION OF SENSOR 717468 BOTTLENECK")
-    para(
-        "In Phase 1 error diagnostics, Sensor 717468 was identified as the single worst-case failure mode: on June 20, 2012 "
-        "at 19:00, an abrupt capacity collapse occurred, dropping speeds from 65 to 10 source units. All Phase 1 models "
-        "lagged by over 45 minutes because their input features were localized to the sensor itself."
+        "The Phase 1 contract is reused through Phase 1's own loaders: chronological split (2012-03-01 to "
+        "2012-06-27, stored clock), unavailable readings (zero, negative, non-finite) excluded from loss and "
+        "scoring, fill and scaling fitted on training data only. Origins are 23,967 / 3,416 / 6,844. Each deep "
+        "family has four search candidates trained with seed 42 and scored on validation; the candidate with the "
+        "lowest mean validation MAE is retrained with seeds 42, 43, 44 (one seed for the shuffled and DCRNN "
+        "identity controls) and only these final runs predict the test period. Training uses Adam, batch "
+        "32-64, early stopping with patience 8 on validation MAE, and a wall-clock cap per run. The scorer "
+        f"reproduces every Phase 1 metric (maximum |MAE difference| {r['parity']['max_abs_mae_diff']:.1e}) and "
+        "every Phase 1 bootstrap interval exactly."
     )
     para(
-        "As illustrated in Fig. 3, Phase 2 spatiotemporal graph modeling resolves this failure mode. Because downstream "
-        "and upstream detectors experienced the onset wave 15–20 minutes earlier, GAT's multi-head attention dynamically "
-        "routes attention weights to these connected neighbors, anticipating the collapse at the exact onset time."
+        "Comparisons use Phase 1's paired circular moving-block bootstrap over stored days (2-day blocks, 2,000 "
+        "resamples, seed 42); for multi-seed models each day's error sum is the mean over seeds. Peak/off-peak "
+        "intervals use period-filtered day sums; contrasts between gains (H3, H4) are bootstrapped on the same "
+        "resampled days. A comparison 'A beats B' is supported if the whole 95% interval of the MAE reduction is "
+        "above zero, contradicted if below, inconclusive otherwise. Intervals are conditional on this test period "
+        "and not adjusted for multiple comparisons."
     )
+    rows = []
+    for mid, g in meta.groupby("model_id", sort=False):
+        if mid not in NAME:
+            continue
+        code = {"early_stop": "E", "max_epochs": "M", "time_cap": "T"}
+        stops = " ".join(f"{code.get(k, k)}{v}" for k, v in g["stop_reason"].value_counts().items())
+        rows.append([NAME[mid], str(g["graph"].iloc[0]), f"{int(g['params'].iloc[0]):,}", str(len(g)),
+                     f"{g['epochs_run'].min():.0f}-{g['epochs_run'].max():.0f}" if g["epochs_run"].nunique() > 1
+                     else f"{g['epochs_run'].iloc[0]:.0f}", stops, f"{g['train_seconds'].mean() / 60:.0f}"])
+    order = {m: i for i, m in enumerate(PHASE2_MODELS)}
+    rows.sort(key=lambda x: order.get(next(k for k, v in NAME.items() if v == x[0]), 99))
+    devices = ", ".join(sorted({str(d).upper() for d in meta["device"].dropna()}))
+    table(f"TABLE I\nFINAL TRAINING RUNS (FROM EACH RUN'S meta.json; DEVICE {devices}). STOP: E EARLY STOPPING, "
+          "M 60-EPOCH LIMIT, T TIME CAP, WITH RUN COUNTS",
+          ["Model", "Graph", "Params", "Seeds", "Epochs", "Stop", "Min/run"], rows)
 
-    figure(
-        "fig_case_study.png",
-        "Fig. 3. Retrospective case study of Sensor 717468 incident collapse (June 20, 2012 at 19:00). Phase 1 XGBoost suffers 45-minute spatial blindness lag; Phase 2 Graph Attention anticipates collapse through topological neighbor telemetry.",
-    )
-
-    # --- Section VII: Simulated Signal Control Benchmark ---
-    heading("VII. SIMULATED ADAPTIVE TRAFFIC SIGNAL CONTROL")
+    # ---------------- V. Results ----------------
+    heading("V. FORECAST ACCURACY")
+    rows = []
+    for m in PHASE1_MODELS + [m for m in PHASE2_MODELS if m in have]:
+        cells = []
+        for h in HZ:
+            v = mae(r, m, h)
+            s_ = sd(r, m, h)
+            cells.append(f"{v:.3f}" + (f" ±{s_:.3f}" if s_ > 0 else ""))
+        rows.append([FAMILY[m], NAME[m], *cells])
+    table("TABLE II\nTEST MAE BY HORIZON (SOURCE SPEED UNITS; PHASE 2 MEAN ± SD OVER SEEDS; P1 = PHASE 1)",
+          ["Family", "Model", "5 min", "15 min", "30 min", "60 min"], rows)
     para(
-        "To establish whether predictive speed improvements deliver real-world utility, we formulated a discrete-event "
-        "queueing simulation of a signalized arterial ramp approach (Webster two-term delay + overflow spillback penalty) [5]. "
-        "Arrival flow rate is governed by the Greenshields fundamental diagram: q(v) = k_jam * v * (1 - v / v_free)."
+        f"Table II gives test MAE. At 60 minutes the best Phase 2 model is {NAME[best_p2]} "
+        f"({mae(r, best_p2, '60min'):.3f}); GRU Local reaches {mae(r, 'gru_local', '60min'):.3f} and "
+        f"XGBoost + HA {mae(r, 'xgboost_ha', '60min'):.3f}. At 5 minutes the ordering is "
+        + ", ".join(f"{NAME[m]} {mae(r, m, '5min'):.3f}" for m in sorted(
+            [m for m in ("xgboost_ha", "gru_local", "gat", "dcrnn") if m == "xgboost_ha" or m in have],
+            key=lambda m: mae(r, m, "5min"))) + "."
     )
-    equation("DELAY", 3)
-    para(
-        "We evaluated four signal timing policies across 80 independent simulation runs (5 seeds, 4 operating scenarios): "
-        "(1) Fixed-Time: Static 35s green allocation. (2) Reactive Actuated: Adjusts green based on current loop detector speed. "
-        "(3) Local Predictive (Phase 1): Uses localized 15m XGBoost speed forecast. "
-        "(4) Spatiotemporal Graph Predictive (Phase 2): Synthesizes 15m and 30m graph forecasts to proactively flush queues "
-        "and adjust cycle splits before shockwaves arrive."
-    )
+    figure("fig_horizon_mae.png", "Fig. 1. Test MAE by horizon (Phase 2: mean ± sd over seeds).")
+    rows = []
+    for m in ["persistence", "xgboost_ha"] + [m for m in ("gru_local", "gat_identity", "gat", "dcrnn") if m in have]:
+        t = r["test"]
+        rows.append([NAME[m], f"{t.loc[(m, 'all', '60min'), 'rmse_mean']:.3f}", f"{t.loc[(m, 'all', '60min'), 'mape_mean']:.2f}",
+                     f"{mae(r, m, '60min', 'peak'):.3f}", f"{mae(r, m, '60min', 'off_peak'):.3f}"])
+    table("TABLE III\n60-MINUTE TEST RMSE, MAPE (%) AND PEAK / OFF-PEAK MAE",
+          ["Model", "RMSE", "MAPE", "MAE peak", "MAE off-peak"], rows)
+    figure("fig_peak_offpeak.png", "Fig. 2. 60-minute test MAE in weekday peak (07-10, 16-19 stored clock) and off-peak.")
 
-    # Table III: Signal Results
-    table(
-        "TABLE III\nSIMULATED ADAPTIVE TRAFFIC SIGNAL CONTROL BENCHMARK ACROSS 80 RUNS",
-        ["Operating Scenario", "Control Policy", "Mean Delay (s/veh)", "Spillback Rate (%)", "Fuel Proxy (L)"],
-        [
-            ["Morning Peak", "Fixed-Time", "248.9 ± 1.9", "76.5%", "407.0"],
-            ["Morning Peak", "Reactive Actuated", "243.3 ± 2.6", "74.3%", "475.0"],
-            ["Morning Peak", "Local Predictive (P1)", "246.0 ± 3.1", "75.7%", "468.2"],
-            ["Morning Peak", "Graph Predictive (P2)", "206.0 ± 10.2", "62.5%", "481.8"],
-            ["Evening Peak", "Fixed-Time", "269.0 ± 3.4", "80.3%", "473.6"],
-            ["Evening Peak", "Reactive Actuated", "256.3 ± 5.8", "77.7%", "582.8"],
-            ["Evening Peak", "Local Predictive (P1)", "261.7 ± 3.5", "79.5%", "581.0"],
-            ["Evening Peak", "Graph Predictive (P2)", "248.6 ± 3.9", "74.2%", "644.7"],
-            ["Incident Shockwave", "Fixed-Time", "202.6 ± 1.2", "64.0%", "291.6"],
-            ["Incident Shockwave", "Reactive Actuated", "141.9 ± 3.4", "35.2%", "263.6"],
-            ["Incident Shockwave", "Local Predictive (P1)", "152.4 ± 7.0", "47.8%", "290.5"],
-            ["Incident Shockwave", "Graph Predictive (P2)", "112.6 ± 12.4", "26.0%", "232.7"],
-            ["Off-Peak Baseline", "Fixed-Time", "27.3 ± 0.3", "0.0%", "28.5"],
-            ["Off-Peak Baseline", "Graph Predictive (P2)", "22.8 ± 3.1", "0.0%", "25.9"],
-        ],
-    )
+    # ---------------- VI. Does the graph help? ----------------
+    heading("VI. DOES THE ROAD GRAPH HELP?")
+    pairs = [("gru_local", "gat"), ("gat_identity", "gat"), ("gat_shuffled", "gat"), ("gat_identity", "gat_shuffled"),
+             ("gru_local", "dcrnn"), ("dcrnn_identity", "dcrnn"), ("xgboost_ha", "gat"), ("xgboost_ha", "dcrnn"),
+             ("xgboost_ha", "gru_local")]
+    rows = []
+    for b_, c_ in pairs:
+        r15, r60 = boot(r, b_, c_, "15min"), boot(r, b_, c_, "60min")
+        if r15 is None or r60 is None:
+            continue
+        rows.append([f"{NAME[c_]} vs {NAME[b_]}", ci_text(r15), ci_text(r60)])
+    table("TABLE IV\nPAIRED BOOTSTRAP: MAE REDUCTION OF FIRST MODEL [95% CI]",
+          ["Comparison", "15 min", "60 min"], rows)
+    hyp_rows = []
+    h = r["hypotheses"]
+    for hid in ("H1", "H2", "H3", "H4", "H5", "H0"):
+        g = h[h["id"] == hid]
+        stmt = g["statement"].iloc[0].split(" [")[0]
+        v = word(g["overall_verdict"].iloc[0])
+        if hid == "H2":
+            v += f" (part a {word(h2a)}, part b {word(h2b)})"
+        hyp_rows.append([hid, stmt, v])
+    table("TABLE V\nPRE-REGISTERED HYPOTHESES AND CODE-COMPUTED VERDICTS", ["ID", "Hypothesis", "Verdict"], hyp_rows)
 
-    figure(
-        "fig_signal_delay_comparison.png",
-        "Fig. 4. Mean vehicle delay across signal control policies in simulated operating regimes. Error bars indicate standard deviation across 5 independent random seeds.",
-    )
-
-    figure(
-        "fig_signal_queue_dynamics.png",
-        "Fig. 5. Simulated queue accumulation during incident shockwave. Reactive and local policies suffer severe mainline spillback; Graph Predictive policy proactively flushes queue to remain within ramp capacity.",
-    )
-
-    # --- Section VIII: Computational & Sustainability Analysis ---
-    heading("VIII. COMPUTATIONAL EFFICIENCY AND SUSTAINABILITY")
-    para(
-        "Table IV summarizes model complexity, parameter counts, and inference latency. GAT achieves competitive "
-        "performance with only 6,276 parameters—under 1/20th the size of DCRNN (131,009 parameters). On an Apple Silicon M3 "
-        "processor, GAT achieves an inference latency of 0.82 ms per origin batch, easily supporting real-time deployment "
-        "within 90-second traffic signal controllers."
-    )
-
-    table(
-        "TABLE IV\nCOMPUTATIONAL EFFICIENCY, MODEL COMPLEXITY AND RUNTIME PROFILE",
-        ["Model Identifier", "Architecture", "Parameter Count", "Inference Latency", "Colab T4 Epoch"],
-        [
-            ["Persistence", "Rule-based", "0", "< 0.01 ms", "N/A"],
-            ["Random Forest 32", "Ensemble (100 trees)", "~1.2M", "14.2 ms", "N/A"],
-            ["XGBoost + HA 36", "Gradient Boosted Trees", "~450k", "2.1 ms", "N/A"],
-            ["GRU Local", "Recurrent (Non-graph)", "5,124", "0.45 ms", "1.5 s"],
-            ["GAT (Candidate 0)", "Graph Attention Network", "6,276", "0.82 ms", "6.4 s"],
-            ["DCRNN (Candidate 2)", "Diffusion Convolutions", "131,009", "4.80 ms", "24.1 s"],
-        ],
-    )
+    def comp_line(hid, labels=None):
+        g = h[h["id"] == hid]
+        out = []
+        for comp, gg in g.groupby("comparison", sort=False):
+            parts = [f"{row['horizon']}: {row['mae_difference']:+.3f} [{row['ci95_low']:+.3f}, {row['ci95_high']:+.3f}]"
+                     for _, row in gg.iterrows() if pd.notna(row["ci95_low"])]
+            if not parts:
+                continue
+            lab = (labels or {}).get(comp)
+            out.append((f"{lab}, " if lab else "") + "; ".join(parts))
+        return " | ".join(out)
 
     para(
-        "Furthermore, our simulated emissions proxy indicates that by eliminating queue spillbacks during peak hours, "
-        "graph-predictive control reduces fuel waste and idling CO2 emissions by up to 20.2% during severe incident regimes."
+        f"H1 ({word(V['H1'])}): GAT minus GRU Local reduction {comp_line('H1')}. "
+        f"H2 ({word(V['H2'])}): " + comp_line('H2', {"gat_identity - gat": "part a, GAT vs GAT identity",
+                                                   "gat_identity - gat_shuffled": "part b, GAT shuffled vs GAT identity"}) + ". "
+        f"H3 ({word(V['H3'])}): peak gain minus off-peak gain {comp_line('H3')}. "
+        f"H4 ({word(V['H4'])}): change in gain between consecutive horizons {comp_line('H4')}."
     )
-
-    # --- Section IX: Reproducibility & Limitations ---
-    heading("IX. REPRODUCIBILITY AND SCIENTIFIC LIMITATIONS")
+    h5 = h[h["id"] == "H5"]["note"].iloc[0]
+    para(f"H5 (descriptive): {h5}")
+    h0 = h[h["id"] == "H0"]
     para(
-        "All Phase 2 code, configurations, model checkpoints, and evaluation scripts are publicly preserved in the "
-        "repository. Unit tests cover 96 verification cases including zero leakage, parameter count locks, and queue conservation. "
-        "Per project rules, the following scientific boundaries are explicitly declared: (1) Speeds are reported in source "
-        "units (likely mph, unverified). (2) Timestamps reflect stored clock time. (3) Geographic regions represent coordinate "
-        "bounding boxes rather than verified freeway administrations. (4) Signal control experiments are purely simulated in "
-        "software and do not imply live field actuation."
+        f"H0 ({word(V['H0'])}): reduction of each model vs XGBoost + HA, " + comp_line('H0', {"xgboost_ha - gat": "GAT",
+                                                   "xgboost_ha - dcrnn": "DCRNN"}) + ". XGBoost + HA uses "
+        "historical-average features the deep models do not receive, so this difference is not a graph effect; "
+        "only the within-family comparisons above isolate the graph."
     )
+    figure("fig_graph_ablation.png", "Fig. 3. Paired bootstrap intervals; positive values mean the first model has lower test MAE.")
+    figure("fig_error_by_degree.png", "Fig. 4. Per-sensor 60-minute gain of GAT over GAT identity against graph degree (descriptive).")
+    figure("fig_seed_spread.png", "Fig. 5. Test MAE of each training seed.")
 
-    # --- Section X: Conclusion ---
-    heading("X. CONCLUSION")
+    # ---------------- VII. Where are the errors? ----------------
+    heading("VII. SPATIAL AND EVENT ANALYSIS")
+    ev = r["events"]
+    rows = []
+    for m in ["persistence", "xgboost_ha"] + [m for m in ("gru_local", "gat", "dcrnn") if m in have]:
+        e = ev[ev["model"] == m].set_index("horizon")
+        rows.append([NAME[m]] + [f"{e.loc[hh, 'recall_onset']:.3f}" for hh in ("15min", "30min", "60min")]
+                    + [f"{e.loc['60min', 'precision_congestion']:.3f}"])
+    table("TABLE VI\nPROXY CONGESTION: ONSET RECALL BY HORIZON AND 60-MIN PRECISION (TEST)",
+          ["Model", "Onset 15m", "Onset 30m", "Onset 60m", "Prec. 60m"], rows)
     para(
-        "Phase 2 successfully resolves the core spatial blindness limitation of Phase 1 local machine learning models. "
-        "By modeling the METR-LA sensor network as a directed road graph, GAT and DCRNN achieve statistically significant "
-        "forecast gains across 30 and 60-minute horizons. More importantly, downstream signal simulation proves that graph "
-        "predictive foresight prevents queue spillbacks during shockwave events, reducing vehicle delay by 44.4%. This bridges "
-        "abstract loss minimization to measurable, real-world intelligent transportation impact."
+        "Proxy congestion means speed below 60% of the sensor's training 85th percentile; an onset is a target "
+        "that is congested while the origin was not. Onsets are rare and hard for every model; Table VI reports "
+        "how many of them each model's forecast also places below the threshold."
+    )
+    figure("fig_map_morning_60min.png", f"Fig. 6. Test morning peak, 60 min: observed speed, MAE of {NAME[r['run_best']['phase1']]} "
+           f"and {NAME[r['run_best']['phase2']]}, and their difference (sensor coordinates).")
+    figure("fig_map_evening_60min.png", "Fig. 7. As Fig. 6 for the evening peak.")
+    figure("fig_congestion_map_evening_15min.png", "Fig. 8. Observed and predicted proxy congestion rate, evening peak, 15 min.")
+    figure("fig_case_study.png", "Fig. 9. Phase 1's retrospective example (sensor 717468, 2012-06-11): observed speed and forecasts "
+           "plotted at target time. Selected for inspection after evaluation; illustrative, not a test.")
+    if r["attention_stats"] is not None:
+        a = r["attention_stats"]
+        para("Attention summaries (GAT seed 42, 12 exported test origins): " + attention_sentence(a)
+             + " Attention shows what the model weighted, not how traffic propagates.")
+    figure("fig_attention_example.png", "Fig. 10. GAT attention from the highest-degree sensor to its neighbours (last layer, head mean).")
+
+    # ---------------- VIII. Simulated signal control ----------------
+    heading("VIII. SIMULATED SIGNAL CONTROL")
+    sm = signal_summary.get("metadata", {})
+    fm = sm.get("forecast_mae", {})
+    para(
+        "This is a software simulation, not traffic control. One signalised main approach (2 lanes) and a cross "
+        "street (1 lane, 500 veh/h) are simulated cycle by cycle (90 s cycle, 10 s lost time, green 15-60 s) with "
+        "Greenshields-shaped arrivals generated from speed and Webster uniform delay plus an overflow term [5]. "
+        "Adaptive policies size green for the worst of the speed signals they see."
+    )
+    para(
+        "Experiment A (synthetic) uses synthetic speed profiles and synthetic forecasts with noise sized to "
+        f"measured test MAEs (local {fm.get('local_15m_mae')}, graph {fm.get('graph_15m_mae')} at 15 min). "
+        f"Experiment B uses real test-period weekday speeds (06:00-21:00) of the {len(real['metadata']['sensors']) if real else 0} sensors with the most "
+        "proxy congestion (chosen from observed data only) and the models' actual test forecasts; every predictive "
+        "policy sees the same signals and only the forecast source differs."
+    )
+    scen = signal_summary.get("scenarios", {})
+    rows = []
+    for sk, sl in (("morning_peak", "Morning"), ("evening_peak", "Evening"), ("shockwave_incident", "Incident"), ("off_peak", "Off-peak")):
+        if sk in scen:
+            rows.append([sl] + [f"{scen[sk][p]['mean_delay_s']:.1f}" for p in
+                                ("fixed_pretimed", "reactive_actuated", "predictive_local_p1", "predictive_graph_p2")])
+    table("TABLE VII\nEXPERIMENT A (SYNTHETIC): MEAN DELAY, S/VEH",
+          ["Scenario", "Fixed", "Reactive", "Local fc.", "Graph fc."], rows)
+    figure("fig_signal_delay_comparison.png", "Fig. 11. Experiment A: simulated mean delay by policy and scenario.")
+    if real:
+        rows = []
+        lab = {"fixed_pretimed": "Fixed-time", "reactive_actuated": "Reactive", "forecast_xgboost_ha": "XGBoost + HA forecast",
+               "forecast_gru_local": "GRU Local forecast", "forecast_gat": "GAT forecast", "forecast_dcrnn": "DCRNN forecast",
+               "forecast_perfect": "Perfect forecast (ref.)"}
+        for p in lab:
+            if p in real["policies"]:
+                c = real["paired_vs_xgboost_ha"].get(p)
+                rows.append([lab[p], f"{real['policies'][p]['mean_delay_s']:.2f}",
+                             f"{real['policies'][p]['spillback_rate_pct']:.1f}%",
+                             "-" if c is None else f"{c['delay_reduction_vs_xgboost_ha_s']:+.2f} [{c['ci95_low']:+.2f}, {c['ci95_high']:+.2f}]"])
+        table(f"TABLE VIII\nEXPERIMENT B (REAL SPEEDS AND FORECASTS, {real['metadata']['runs']} RUNS)",
+              ["Policy", "Delay s/veh", "Spillback", "Saved vs XGB [95% CI]"], rows)
+        para(
+            "Fixed timing with a 35 s green cannot keep up with the simulated demand over a full day, so its queue and "
+            "delay grow without bound; this is a property of the assumed demand rule. Among adaptive policies the "
+            "forecast source changes delay by fractions of a second per vehicle, and a perfect forecast bounds what "
+            "any forecaster could add in this simulator."
+        )
+        figure("fig_signal_real_forecasts.png", "Fig. 12. Experiment B: delay saved per vehicle relative to the XGBoost + HA forecast.")
+
+    # ---------------- IX. Model size ----------------
+    heading("IX. MODEL SIZE")
+    table("TABLE IX\nPARAMETER COUNTS OF SEARCH CANDIDATES", ["Candidate", "Settings", "Parameters"],
+          candidate_parameter_counts())
+
+    # ---------------- X. Limitations ----------------
+    devs = sorted({str(d) for d in r["run_meta"]["device"].dropna()})
+    devices_note = ("wall-clock caps and a 60-epoch limit bound training; all final runs used the same device "
+                    f"({devs[0].upper()}, Table I), so runs that hit a cap reflect that device's speed"
+                    if len(devs) == 1 else
+                    "wall-clock caps bound training, and devices differ between runs (Table I)")
+    heading("X. REPRODUCIBILITY AND LIMITATIONS")
+    para(
+        f"Code, run files, final configs, checkpoints and result tables are in the repository; {count_phase2_tests()} "
+        "Phase 2 unit tests cover leakage, Phase 1 parity, graph handling, verdict logic and the simulator. Limits: "
+        "(1) speeds are in source units (likely mph, unverified); (2) timestamps are on the stored clock (timezone "
+        "unverified); (3) regions are coordinate boxes, not named freeways; (4) congestion is a proxy; (5) one "
+        "chronological split of one city and season; (6) " + devices_note + (f"; {capped_note}" if capped_note else "") + "; (7) intervals are not adjusted for multiple comparisons; (8) attention weights are not "
+        "evidence of traffic propagation; (9) signal results are simulated with an assumed demand rule."
     )
 
-    # --- References ---
+    # ---------------- XI. Conclusion ----------------
+    heading("XI. CONCLUSION")
+    concl = []
+    if V.get("H2") == "supported":
+        concl.append("on this split, giving GAT the road graph lowered error relative to the same model without neighbours, and a wrong graph did not help")
+    elif h2a == "supported" and h2b == "contradicted":
+        concl.append(
+            f"on this split, the road graph lowered GAT's error relative to the same model without neighbours "
+            f"({ci_text(g60)} at 60 min), but a shuffled graph with the same degrees also helped "
+            f"({ci_text(s60)}), so H2 as pre-registered is not supported: part of the gain comes from mixing "
+            f"information across sensors, not only from the true road links"
+            + (f", while the real graph still beat the shuffled one ({ci_text(gs60)})" if gs60 is not None else ""))
+    elif h2a == "contradicted":
+        concl.append("on this split, the road graph did not help GAT relative to the same model without neighbours")
+    else:
+        concl.append("on this split, the evidence that the road graph helps GAT is mixed (H2 inconclusive)")
+    if x60["gat"] is not None:
+        better = x60["gat"]["ci95_low"] > 0
+        worse = x60["gat"]["ci95_high"] < 0
+        concl.append("GAT's 60-minute MAE is " + ("lower than" if better else "higher than" if worse else "not distinguishable from")
+                     + " the Phase 1 XGBoost + HA model, which uses features the deep models lack")
+    if d60 is not None:
+        concl.append(f"DCRNN gained more from its graph ({ci_text(d60)} at 60 min against its identity control, one control seed)")
+    if "dcrnn" in have and x60.get("dcrnn") is not None:
+        concl.append(f"DCRNN, compared with XGBoost + HA, has {vs_xgb('dcrnn')}, without historical-average features"
+                     + (", even though its training was cut by the wall-clock cap"
+                        if any(c.startswith("DCRNN stopped at the wall-clock") for c in capped) else ""))
+    para("We compared graph and non-graph forecasters under one leak-free protocol with code-computed verdicts. "
+         + (lambda t: t[:1].upper() + t[1:])("; ".join(concl)) + ". In simulation, adaptive timing mattered far more than forecast accuracy.")
+
     heading("REFERENCES")
-    for r in REFERENCES:
-        reference(r)
-
+    for i, ref in enumerate(REFERENCES, 1):
+        reference(f"[{i}] {ref}")
     return abstract, blocks
+
+
+PHASE1_60 = {"xgboost_ha": 3.688}
+
+
+def attention_sentence(a: pd.DataFrame) -> str:
+    cols = a.columns
+    out = []
+    label = {"mass_self": "attention on the sensor itself", "mass_neighbours": "on graph neighbours",
+             "mass_downstream": "on 'downstream' neighbours (graph direction convention)",
+             "mass_upstream": "on 'upstream' neighbours", "entropy": "row entropy"}
+    for c in ("mass_self", "mass_neighbours", "mass_downstream", "mass_upstream", "entropy"):
+        if c in cols:
+            g = a[a["period"].isin(["peak", "off_peak"])].groupby("period")[c].mean() if "period" in cols else None
+            if g is not None and len(g):
+                out.append(f"{label[c]} " + " / ".join(f"{v:.3f} ({k.replace('_', '-')})" for k, v in g.items()))
+            else:
+                out.append(f"{label[c]} {a[c].mean():.3f}")
+    if not out:
+        return ""
+    return ("Mean " + "; ".join(out) + ". A neighbour linked in both directions counts as both upstream and "
+            "downstream, so those two shares can add up to more than the neighbour share.")
 
 
 def generate_latex_source(
@@ -530,7 +733,8 @@ def generate_latex_source(
 
     lines = [
         r"\documentclass[conference]{IEEEtran}",
-        r"\usepackage{graphicx,booktabs,amsmath,amssymb}",
+        r"\usepackage[T1]{fontenc}",
+        r"\usepackage{graphicx,booktabs,amsmath,amssymb,textcomp,tabularx,array}",
         r"\usepackage[hidelinks]{hyperref}",
         r"\title{" + escape(TITLE) + r"\\" + escape(SUBTITLE) + "}",
         r"\author{" + author_block + "}",
@@ -565,18 +769,30 @@ def generate_latex_source(
             }
             lines.append(r"\begin{equation}" + eq_map.get(eq_name, r"y=f(x)") + r"\end{equation}")
         elif kind == "table":
-            caption = value["caption"].split("\n", 1)[-1].capitalize()
+            caption = value["caption"].split("\n", 1)[-1]
             lines.extend([
                 r"\begin{table}[t]",
                 r"\caption{" + escape(caption) + "}",
-                r"\centering\footnotesize",
-                r"\begin{tabular}{l" + "r" * (len(value["headers"]) - 1) + "}",
+                r"\centering\footnotesize\setlength{\tabcolsep}{3pt}",
+            ])
+            # Long-text columns wrap (tabularx X columns); otherwise shrink to the column only if too wide.
+            ncol = len(value["headers"])
+            widths = [max(len(str(x[j])) for x in [value["headers"]] + list(value["rows"])) for j in range(ncol)]
+            wrap = [w > 24 for w in widths]
+            spec = "".join(r">{\raggedright\arraybackslash}X" if wrap[j] else ("l" if j == 0 else "r")
+                           for j in range(ncol))
+            if any(wrap):
+                lines.append(r"\begin{tabularx}{\columnwidth}{" + spec + "}")
+            else:
+                lines.append(r"\resizebox{\ifdim\width>\columnwidth\columnwidth\else\width\fi}{!}{"
+                             r"\begin{tabular}{" + spec + "}")
+            lines.extend([
                 r"\toprule",
                 " & ".join(escape(x) for x in value["headers"]) + r"\\",
                 r"\midrule",
             ])
             lines += [" & ".join(escape(x) for x in row) + r"\\" for row in value["rows"]]
-            lines.extend([r"\bottomrule", r"\end{tabular}", r"\end{table}"])
+            lines.extend([r"\bottomrule", r"\end{tabularx}" if any(wrap) else r"\end{tabular}}", r"\end{table}"])
         elif kind == "figure":
             lines.extend([
                 r"\begin{figure}[t]",
@@ -689,16 +905,16 @@ def generate_pdf_document(
         "cell": ParagraphStyle(
             "Cell",
             parent=body,
-            fontSize=7.5,
-            leading=8.8,
+            fontSize=7,
+            leading=8.2,
             alignment=TA_LEFT,
             firstLineIndent=0,
         ),
         "cellnum": ParagraphStyle(
             "CellNum",
             parent=body,
-            fontSize=7.5,
-            leading=8.8,
+            fontSize=7,
+            leading=8.2,
             alignment=TA_CENTER,
             firstLineIndent=0,
         ),
@@ -781,7 +997,7 @@ def generate_pdf_document(
                 r = [Paragraph(str(x), styles["cell"]) for x in row]
                 table_data.append(r)
 
-            t = Table(table_data, colWidths=[252.0 / len(val["headers"])] * len(val["headers"]))
+            t = Table(table_data, colWidths=_column_widths(val["headers"], val["rows"], styles["cell"]))
             t.setStyle(TableStyle([
                 ("LINEABOVE", (0, 0), (-1, 0), 0.8, colors.black),
                 ("LINEBELOW", (0, 0), (-1, 0), 0.5, colors.black),
@@ -796,7 +1012,16 @@ def generate_pdf_document(
         elif kind == "figure":
             fpath = OUT / "figures" / val["file"]
             if fpath.exists():
-                img = Image(str(fpath), width=248, height=155)
+                from PIL import Image as PILImage
+
+                with PILImage.open(fpath) as im:
+                    w_px, h_px = im.size
+                width = 248.0
+                height = width * h_px / w_px
+                if height > 330:  # keep tall figures inside the column
+                    height = 330.0
+                    width = height * w_px / h_px
+                img = Image(str(fpath), width=width, height=height)
                 story.append(KeepTogether([
                     img,
                     Paragraph(f"<i>{val['caption']}</i>", styles["caption"]),
@@ -820,7 +1045,7 @@ def main() -> None:
         authors = json.load(f)
 
     # Read signal simulation summary
-    signal_summary_path = ROOT / "data" / "metadata" / "phase2" / "signal_sim_summary.json"
+    signal_summary_path = METRICS_DIR / "signal_sim_summary.json"
     if signal_summary_path.exists():
         with open(signal_summary_path, "r", encoding="utf-8") as f:
             signal_summary = json.load(f)
@@ -828,11 +1053,13 @@ def main() -> None:
         signal_summary = {"scenarios": {}}
 
     print("=== Building Phase 2 IEEE Research Paper ===")
+    results = load_phase2_results()
+    print(f"Scored Phase 2 models: {results['models']}")
     # 1. Render publication figures into reports/paper_phase2/figures/
-    render_paper_figures()
+    render_paper_figures(results)
 
     # 2. Build structured content
-    abstract, blocks = build_paper_content(signal_summary, authors)
+    abstract, blocks = build_paper_content(signal_summary, authors, results)
 
     # 3. Write structured JSON
     paper_json_path = OUT / "paper_content.json"
@@ -857,8 +1084,14 @@ def main() -> None:
     generate_pdf_document(abstract, blocks, authors)
 
     # 6. Generate QA Verification Report
+    pending = [m for m in PHASE2_MODELS if m not in results["models"]]
     qa_report = {
-        "status": "passed",
+        "status": "pending_training" if pending else "results_from_evaluation_outputs",
+        "phase2_models_scored": results["models"],
+        "phase2_models_pending": pending,
+        "hypothesis_verdicts": verdicts(results),
+        "phase1_parity": results["parity"],
+        "phase2_numbers_source": "data/metadata/phase2/metrics_summary.csv and hypotheses.csv (no hand-typed Phase 2 results)",
         "paper_title": TITLE,
         "authors_count": len(authors.get("names", [])),
         "sections_count": len([b for b in blocks if b[0] == "heading"]),
@@ -868,7 +1101,7 @@ def main() -> None:
         "claims_compliance": {
             "speed_units": "source speed units; physical units unverified",
             "timezone": "stored clock; UTC unverified",
-            "signal_control": "strictly simulated; no physical actuation claim",
+            "signal_control": "simulated; experiment A synthetic (noise sized from measured MAEs), experiment B real speeds and real forecasts with an assumed demand rule",
             "spatial_freeways": "coordinate proxy regions; no named freeways claimed",
         },
     }
@@ -894,6 +1127,10 @@ def main() -> None:
 - `paper_content.json`: Machine-readable structured narrative blocks.
 - `qa_report.json`: QA claims audit.
 - `figures/`: Publication-grade figures.
+- `phase2_ieee_source.zip`: Overleaf bundle (`.tex`, `authors.json`, this README, included figures); rebuild command in `reports/phase2/reproduction.md`.
+- `phase2_slides.pptx`: Presentation, built by `scripts/build_phase2_slides.py`.
+
+Every Phase 2 number is read from `data/metadata/phase2/` (written by `scripts/phase2_eval_all.py` and `scripts/phase2_run_signal_sim.py`); nothing is typed in by hand.
 """
     readme_path.write_text(readme_text, encoding="utf-8")
     print(f"Saved: {readme_path}")

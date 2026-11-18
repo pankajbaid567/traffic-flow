@@ -1,0 +1,8 @@
+{
+  "rows_compared": 200,
+  "max_abs_mae_diff": 0.0,
+  "max_abs_rmse_diff": 3.552713678800501e-15,
+  "n_counts_equal": true,
+  "passed": true,
+  "phase1_bootstrap_reproduced": true
+}

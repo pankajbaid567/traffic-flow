@@ -148,5 +148,38 @@ class TestBenchmarkRunner(unittest.TestCase):
         self.assertIn("shockwave_incident", summary["scenarios"])
 
 
+class TestRealForecastBenchmark(unittest.TestCase):
+    """Real test speeds + real forecasts (needs the raw data and Phase 1 parquets)."""
+
+    def test_forecast_policy_sees_current_and_both_forecasts(self) -> None:
+        from src.phase2.signal_sim.real_forecasts import ForecastPolicy
+        from src.phase2.signal_sim.simulator import SignalSimulationConfig
+
+        pol = ForecastPolicy(SignalSimulationConfig(), "forecast_x")
+        self.assertEqual(pol.speed_signals(50.0, 20.0, 30.0, 10.0), [50.0, 20.0, 30.0])
+        # a slower forecast asks for at least as much green as the current speed alone
+        self.assertGreaterEqual(pol.compute_green_time(5.0, 60.0, 25.0, 60.0),
+                                pol.compute_green_time(5.0, 60.0, 60.0, 60.0))
+
+    def test_runs_on_phase1_forecasts_only(self) -> None:
+        import tempfile
+        from pathlib import Path
+
+        from src.phase2.common import ROOT
+
+        if not (ROOT / "data" / "processed" / "predictions" / "person_c_test_predictions.parquet").is_file() \
+                or not (ROOT / "data" / "raw" / "metr-la.h5").is_file():
+            self.skipTest("raw data or Phase 1 predictions absent")
+        from src.phase2.signal_sim.real_forecasts import run_real_forecast_benchmark
+
+        with tempfile.TemporaryDirectory() as d:
+            df, summary = run_real_forecast_benchmark(Path(d), models=(), n_sensors=2, repetitions=200)
+        self.assertEqual(set(df["policy_name"]), {"fixed_pretimed", "reactive_actuated",
+                                                  "forecast_xgboost_ha", "forecast_perfect"})
+        self.assertEqual(len(summary["metadata"]["sensors"]), 2)
+        self.assertIn("forecast_perfect", summary["paired_vs_xgboost_ha"])
+        self.assertTrue(np.isfinite(df["mean_delay_s"]).all())
+
+
 if __name__ == "__main__":
     unittest.main()

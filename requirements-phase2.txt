@@ -12,6 +12,7 @@ matplotlib>=3.8.4,<4
 networkx>=3.2,<4
 tqdm>=4.66,<5
 nbformat>=5.9.2,<6
-
-# Optional (Member 5 slides). Install separately if wanted:
-#   pip install python-pptx
+reportlab>=4,<6   # scripts/build_phase2_paper.py (PDF)
+python-pptx>=1.0,<2   # scripts/build_phase2_slides.py
+nbclient>=0.10,<1     # build_phase2_error_analysis_notebook.py --execute
+ipykernel>=6.29,<8

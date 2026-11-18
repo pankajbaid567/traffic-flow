@@ -84,8 +84,34 @@
   - `gru_local`: ~0.6s per epoch.
   - `dcrnn` (Candidate 1, $K=2$): ~3.2s per epoch.
 
-### Expected Google Colab T4 GPU Runtime:
-- `gru_local` (batch size 64): ~1.5 minutes per 60-epoch run. Total 4-candidate search: ~6–10 minutes.
-- `dcrnn` (batch size 32): ~4–6 minutes per 60-epoch run on Colab T4 with early stopping.
-  - 4 search candidates: ~18–25 minutes (comfortably inside the 30-minute search cap).
-  - Final runs (`dcrnn` 3 seeds + `dcrnn_identity` 1 seed = 4 runs): ~20–30 minutes total.
+### Measured full-data training (submitted runs, Apple M3, MPS)
+
+The estimates that used to be here (DCRNN "4-6 minutes per 60-epoch run on a T4") were wrong by more than an order of magnitude. Measured values:
+
+| Run | Seconds per epoch | Epochs | Stop | Time |
+|---|---|---|---|---|
+| `gru_local` search c0-c3 | 11-39 | 23-60 | 1 epoch limit, 3 time cap (15 min) | 56 min total |
+| `gru_local` finals (c1, 3 seeds) | about 19 | 50-60 | 2 early stop, 1 epoch limit | 53 min total |
+| `dcrnn` search c0 (h32, K=1) | about 95 | 19 | time cap (30 min) | 30 min |
+| `dcrnn` search c1 (h32, K=2) | about 140 | 13 | time cap | 30 min |
+| `dcrnn` search c2 (h64, K=2), picked | about 200 | 9 | time cap | 30 min |
+| `dcrnn` search c3 (h32, 2 layers) | about 300 | 6 | time cap | 30 min |
+| `dcrnn` finals (c2, 3 seeds) + `dcrnn_identity` (1 seed) | about 215 | 14 each | time cap (50 min) | 201 min total |
+
+For comparison, a Colab T4 ran DCRNN c0 at about 62 s/epoch and c1 at about 92 s/epoch, roughly 1.5 times faster than the M3. The Colab sessions did not last long enough to finish, so they were not used.
+
+## 5. Results (test split, source speed units)
+
+Search (validation MAE, mean over horizons): c0 2.826, c1 2.836, **c2 2.783 (picked)**, c3 2.820 (`data/metadata/phase2/search_dcrnn.csv`). Final validation MAE: 2.736 / 2.749 / 2.754 (seeds 42/43/44); `dcrnn_identity` 3.015.
+
+| Model | 5 min | 15 min | 30 min | 60 min |
+|---|---|---|---|---|
+| `gru_local` | 2.369 | 2.975 | 3.560 | 4.379 ± 0.006 |
+| `dcrnn_identity` (1 seed) | 2.375 | 2.977 | 3.564 | 4.385 |
+| `dcrnn` | 2.305 | 2.799 | 3.220 | 3.734 ± 0.036 |
+| XGBoost + HA 36 (Phase 1) | 2.312 | 2.844 | 3.275 | 3.688 |
+
+- DCRNN vs `dcrnn_identity` at 60 min: +0.650 [+0.507, +0.785] (paired day-block bootstrap; positive = DCRNN lower MAE).
+- DCRNN vs XGBoost + HA: +0.007 [-0.004, +0.018] (5 min), +0.045 [+0.024, +0.067] (15), +0.055 [+0.017, +0.093] (30), -0.046 [-0.100, +0.004] (60).
+- 5-minute MAE 2.305 is well above the ~2.00 leakage red flag.
+- Every DCRNN run stopped at its wall-clock cap, after 14 final epochs, with the best epoch at 10-14. DCRNN is therefore probably under-trained; with more time its errors would likely fall. The published DCRNN reaches 3.56 at 60 min, under a different sample definition.

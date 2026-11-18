@@ -83,6 +83,9 @@ Because METR-LA provides loop detector speed telemetry without vehicle counts or
 - `hypotheses.csv`: Programmatic verdicts for H0–H5.
 - `events.csv`: Precision and recall of proxy congestion onset events.
 - `sensor_metrics.csv` & `region_metrics.csv`: Stratified spatial slices across 7 coordinate regions.
+- `run_meta.csv`: Parameters, epochs, stop reason, training time and device for each final run.
+- `phase1_parity.json`: The Phase 1 reproduction check (must pass before anything is written).
+- `onset_errors.csv`, `case_study_717468.csv`, `attention_stats.csv`, `search_<family>.csv`.
 
 ### Publication Figures (`figures/phase2/`, 300 DPI):
 - `fig_horizon_mae.png`: Multi-horizon forecast error trajectories.
@@ -92,6 +95,31 @@ Because METR-LA provides loop detector speed telemetry without vehicle counts or
 - `fig_error_by_degree.png`: Forecast error vs. node degree in the highway graph.
 
 ---
+
+## 5b. Results of the submitted evaluation (2026-11-18)
+
+- **Phase 1 parity.** Passed: 200 rows compared, max |ΔMAE| 0.0, max |ΔRMSE| 3.6e-15. Phase 1 `paired_bootstrap.csv` intervals were reproduced.
+- **Rows scored.** 28 Phase 2 prediction files. Test: 1,416,708 rows over 6,844 origins. Validation: 707,112 rows over 3,416 origins.
+- **Bootstrap.** 68 intervals in `bootstrap.csv`.
+- **Verdicts.**
+  - H1 supported.
+  - H2 contradicted: part a supported, part b contradicted.
+  - H3 supported.
+  - H4 supported.
+  - H5 descriptive: Spearman 0.284.
+  - H0 contradicted.
+- **Key 60-minute intervals** (positive = first model has lower MAE):
+
+  | Comparison | 60-min interval |
+  |---|---|
+  | GAT vs GAT identity | +0.189 [+0.154, +0.221] |
+  | GAT shuffled vs GAT identity | +0.040 [+0.026, +0.054] |
+  | GAT vs GAT shuffled | +0.149 [+0.124, +0.174] |
+  | DCRNN vs DCRNN identity | +0.650 [+0.507, +0.785] |
+  | DCRNN vs XGBoost + HA | -0.046 [-0.100, +0.004] |
+
+- **Proxy onset recall at 60 min:** DCRNN 0.410, XGBoost + HA 0.341, GAT 0.176, GRU Local 0.119.
+- **Runtime.** `phase2_eval_all.py` took 31 s on the M3.
 
 ## 6. Honest Limitations & Scientific Boundaries
 

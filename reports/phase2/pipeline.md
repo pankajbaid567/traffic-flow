@@ -60,7 +60,7 @@ Outputs: `predictions/<id>/seed<S>_{val,test}.npz` (`pred [n,4,207]` source unit
 | Colab T4 (cuda) | small | 0.1 | 0.1 min | 1,653 MB + 346 MB GPU |
 | Colab T4 (cuda) | heavier | 0.4 | 0.1 min | 1,654 MB + 556 MB GPU |
 
-These are a **lower bound** for GAT and DCRNN, which do far more work per batch; the dummy models barely load a T4. Re-measure with the real models' `smoke` and first epoch before fixing the time caps.
+These are a **lower bound** for GAT and DCRNN, which do far more work per batch; the dummy models barely load a T4. Real-model timings are in the next section.
 
 **Full-scale runs of the example file** (`runs_example.yaml`, complete data, 3 epochs per model; tiny dummy models, not project results):
 - M3 MPS: 128 s end to end (search of 2 candidates, then 4 final runs), about 6-8 s per epoch, 786 MB peak RSS.
@@ -70,6 +70,25 @@ These are a **lower bound** for GAT and DCRNN, which do far more work per batch;
 **Crash test** (real process, full data, MPS): training was stopped with `kill -9` after 3 checkpointed epochs; re-running the same command printed `resumed after epoch 3 (1.2 min used)`, trained epochs 4-8, kept a consistent 8-line `epochs.jsonl`, carried the elapsed time over and wrote the predictions. This is what makes "press Run all again after a Colab disconnect" safe.
 
 **Colab notes:** Colab runs Python 3.13. The repository clones without a token (it is public), so the notebook clone cell works as written. Free-tier GPU sessions can be reclaimed by Google after some minutes (one session was lost mid-work, another T4 request timed out twice); this is why every epoch is checkpointed to Drive. Scripted use of the `colab` CLI: `colab exec --timeout 1200 -f script.py` (default timeout is 30 s), create the file before the command that uses it, and always `colab stop`.
+
+## Measured with the real models (submitted runs, full data)
+
+| Model (picked candidate) | M3 MPS s/epoch | Colab T4 s/epoch | Final-run stop |
+|---|---|---|---|
+| GRU Local (h64) | about 19 | not measured | early stop / 60 epochs |
+| GAT (h64, 2 heads, GRU encoder) | about 26 | not measured | 60-epoch limit |
+| DCRNN c0 (h32, K=1) | about 95 | about 62 | (search only) |
+| DCRNN c1 (h32, K=2) | about 140 | about 92 | (search only) |
+| DCRNN c2 (h64, K=2), picked | about 200-215 | not measured | 50-min cap after 14 epochs |
+
+Total training time on the M3 was 11.2 h; see `reproduction.md` for each family.
+
+**What happened with Colab (2026-11-17/18):**
+- The `colab` CLI's keep-alive stops when the shell that launched it exits.
+- Free-tier sessions died after about 40-60 minutes, three times.
+- Later GPU requests were refused ("Allocation refused"; L4 not available on the free tier).
+- Because the time caps are wall-clock, a search that mixes devices would favour candidates that ran on the faster GPU. The partial Colab DCRNN search was therefore discarded, and every family was trained from scratch on the M3 alone.
+- Checkpoints load with `map_location="cpu"`, so CUDA checkpoints do resume on MPS if needed.
 
 ## Memory notes (8 GB M3)
 Feature tensor 199 MB; a batch of 32 is 12 x 207 x 7 floats per sample (negligible). A model with `[B, heads, N, N]` attention at batch 32 and 4 heads is about 22 MB per layer. Keep `eval_batch_size` equal to `batch_size` unless you have checked memory.

@@ -60,6 +60,13 @@ def parse_args() -> argparse.Namespace:
         help=f"Directory to save PNG figures (default: {DEFAULT_FIG_DIR})",
     )
     parser.add_argument(
+        "--pred-root",
+        type=Path,
+        default=Path(os.environ.get("PHASE2_OUT", ROOT / "data" / "processed" / "phase2")) / "predictions",
+        help="Phase 2 predictions; if present, also run the real-forecast experiment",
+    )
+    parser.add_argument("--real-sensors", type=int, default=30, help="sensors in the real-forecast experiment")
+    parser.add_argument(
         "--seeds",
         nargs="+",
         type=int,
@@ -294,6 +301,37 @@ def plot_spillback_and_emissions(df: pd.DataFrame, output_path: Path) -> None:
 
 
 
+def plot_real_forecasts(summary: dict, output_path: Path) -> None:
+    """Delay reduction vs the Phase 1 forecast (95% day-bootstrap CI), forecast sources only."""
+    comp = summary["paired_vs_xgboost_ha"]
+    order = [p for p in ("forecast_gru_local", "forecast_gat", "forecast_dcrnn", "forecast_perfect") if p in comp]
+    labels = {"forecast_gru_local": "GRU Local", "forecast_gat": "GAT", "forecast_dcrnn": "DCRNN",
+              "forecast_perfect": "Perfect forecast\n(reference)"}
+    colors = {"forecast_gru_local": "#eb6834", "forecast_gat": "#1baf7a", "forecast_dcrnn": "#6250d6",
+              "forecast_perfect": "#8a8985"}
+    fig, ax = plt.subplots(figsize=(5.4, 3.2), facecolor="#fcfcfb")
+    ax.set_facecolor("#fcfcfb")
+    for i, p in enumerate(order):
+        c = comp[p]
+        ax.plot([c["ci95_low"], c["ci95_high"]], [i, i], color=colors[p], lw=2.4, solid_capstyle="round")
+        ax.scatter([c["delay_reduction_vs_xgboost_ha_s"]], [i], color=colors[p], s=40, zorder=3, edgecolor="#fcfcfb")
+        ax.annotate(f"{c['delay_reduction_vs_xgboost_ha_s']:+.2f} s", (c["ci95_high"], i), xytext=(6, 0),
+                    textcoords="offset points", va="center", fontsize=8, color="#52514e")
+    ax.axvline(0, color="#52514e", lw=0.8)
+    ax.set_yticks(range(len(order)))
+    ax.set_yticklabels([labels[p] for p in order])
+    ax.invert_yaxis()
+    ax.grid(axis="x", color="#e4e3df", lw=0.6)
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    ax.set_xlabel("Delay saved vs XGBoost + HA forecast (s/veh, 95% CI)")
+    ax.set_title("Simulated signal, real test speeds and real forecasts", fontsize=10, fontweight="bold")
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=300)
+    plt.close(fig)
+    print(f"Saved: {output_path}")
+
+
 def main() -> None:
     args = parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
@@ -304,8 +342,24 @@ def main() -> None:
     print(f"Figures directory: {args.figures_dir}")
     print(f"Seeds evaluated:   {args.seeds}")
 
-    # 1. Run simulation benchmark
-    df, summary = run_signal_simulation_benchmark(seeds=args.seeds)
+    # 1. Run simulation benchmark. The graph forecast's noise is sized from GAT's measured
+    #    test MAE when the evaluation has run; otherwise the simulator's placeholder is used.
+    overrides = {}
+    ms_path = args.out / "metrics_summary.csv"
+    if ms_path.is_file():
+        from src.phase2.signal_sim.simulator import ForecastErrorSpec
+
+        ms = pd.read_csv(ms_path)
+        t = ms[(ms["split"] == "test") & (ms["period"] == "all")].set_index(["model", "horizon"])["mae_mean"]
+        if ("gat", "15min") in t.index and ("xgboost_32", "15min") in t.index:
+            overrides["forecast_errors"] = ForecastErrorSpec(
+                local_15m_mae=round(float(t[("xgboost_32", "15min")]), 3),
+                graph_15m_mae=round(float(t[("gat", "15min")]), 3),
+                graph_30m_mae=round(float(t[("gat", "30min")]), 3),
+                source="local: XGBoost 32 test MAE; graph: GAT test MAE (mean over seeds); both from data/metadata/phase2/metrics_summary.csv",
+            )
+            print(f"Forecast noise sized from measured MAEs: {overrides['forecast_errors']}")
+    df, summary = run_signal_simulation_benchmark(seeds=args.seeds, config_overrides=overrides)
 
     # 2. Write CSV and JSON results
     csv_path = args.out / "signal_sim_results.csv"
@@ -331,6 +385,22 @@ def main() -> None:
                 f"  {pol:<24} | Delay: {stats['mean_delay_s']:>5.1f} s (±{stats['std_delay_s']:>4.1f}) "
                 f"| Spillback: {stats['spillback_rate_pct']:>5.1f}% | Fuel: {stats['fuel_consumption_proxy']:>5.1f} L"
             )
+
+    # 5. Real speeds + real model forecasts (needs Phase 2 test predictions)
+    if any(args.pred_root.glob("*/seed*_test.npz")):
+        from src.phase2.signal_sim.real_forecasts import run_real_forecast_benchmark
+
+        real_df, real_summary = run_real_forecast_benchmark(args.pred_root, n_sensors=args.real_sensors)
+        real_df.to_csv(args.out / "signal_sim_real_results.csv", index=False)
+        (args.out / "signal_sim_real_summary.json").write_text(json.dumps(real_summary, indent=2))
+        plot_real_forecasts(real_summary, args.figures_dir / "fig_signal_real_forecasts.png")
+        print("\n=== Real speeds, real forecasts (simulated signal) ===")
+        for pol, st in real_summary["policies"].items():
+            print(f"  {pol:<24} delay {st['mean_delay_s']:>8.2f} s  spillback {st['spillback_rate_pct']:>5.1f}%")
+        for pol, c in real_summary["paired_vs_xgboost_ha"].items():
+            print(f"  {pol:<24} vs xgboost_ha: {c['delay_reduction_vs_xgboost_ha_s']:+.3f} s [{c['ci95_low']:+.3f}, {c['ci95_high']:+.3f}]")
+    else:
+        print("\nNo Phase 2 test predictions found; real-forecast experiment skipped.")
 
     print("\nBenchmark and visualizations completed successfully.")
 

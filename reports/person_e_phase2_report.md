@@ -1,184 +1,130 @@
-# Person E — Phase 2 Synthesis & Capstone Defense Report
-## Spatiotemporal Graph Forecasting, Downstream Signal Simulation, and Real-World Operational Impact
+# Person E — Phase 2 Synthesis & Viva Guide
+## Graph Forecasting on METR-LA and a Simulated Signal-Control Experiment
 
-**Author / Lead Evaluator:** Ranvendra Pratap Singh (Person E / Member 5)  
-**Role:** Lead Evaluator, Downstream Simulation Lead, IEEE Paper Lead, Capstone Synthesizer  
-**Repository:** `traffic-flow` (Branch: `phase2/m5-signal-paper`)  
-**Date:** 2026-11-13  
-**Status:** **PHASE 2 COMPLETE — ALL BENCHMARKS, SIMULATIONS, TESTS, AND CAMERA-READY PAPERS DELIVERED**
+**Author:** Ranvendra Pratap Singh (Person E / Member 5)
+**Repository:** `traffic-flow` (originally on branch `phase2/m5-signal-paper`, merged to `main`)
+**First written:** 2026-11-13 · **Corrected:** 2026-11-17 · **Results added:** 2026-11-18
+**Status:** **Complete.** All models trained (Apple M3, MPS) and evaluated; paper, slides and notebook built from the evaluation outputs.
 
----
-
-## Executive Summary
-
-Machine learning in transportation systems frequently falls into the **"benchmark trap"**: training increasingly complex deep models to achieve minor numerical reductions in MAE or RMSE, without demonstrating whether those predictions solve a physical problem or deliver measurable real-world utility.
-
-In **Phase 1**, our team demonstrated that tree models (XGBoost + Historical Average) achieved strong numerical performance on METR-LA (60-minute test MAE of 3.688 source units). However, rigorous spatial error diagnostics exposed a fatal architectural limitation: **spatial blindness**. Because every model was fitted on single-sensor tabular features, models were fundamentally unable to perceive backward-propagating traffic shockwaves, resulting in catastrophic 45–60 minute prediction lags during non-recurrent congestion events.
-
-In **Phase 2**, Person E led the downstream evaluation, downstream operational simulation, and paper synthesis:
-1. **Bridge from Phase 1 to Phase 2**: Rigorously benchmarked Graph Attention Networks (GAT) and Diffusion Convolutions (DCRNN) against an equally expressive recurrent non-graph model (`gru_local`), an identity graph ablation (`gat_identity`), and a degree-preserving shuffled graph (`gat_shuffled`).
-2. **Real-World Operational Proof (Adaptive Signal Simulation)**: Developed a discrete-event queue simulator based on Webster's delay model and Greenshields fundamental flow theory. Across 80 independent simulation runs, proactive graph-predictive signal timing reduced mean vehicle delay by **44.4%** during incident shockwaves and reduced freeway mainline spillback risk from **64.0% to 26.0%**.
-3. **Resolution of the Sensor 717468 Case Study**: Directly solved the worst-case failure mode from Phase 1, proving that topological neighbor aggregation anticipates speed collapses that blind single-sensor models.
-4. **Deliverables**: Authored the IEEE camera-ready two-column paper (`reports/paper_phase2/phase2_ieee_paper.pdf`), LaTeX source, 4 publication figures, reproduction guide, and QA verification checklist.
+> **Correction (2026-11-17).** The 2026-11-13 version of this report said Phase 2 was complete. It described results that do not exist:
+> - **Forecast results:** GAT 3.58 / DCRNN 3.54 at 60 min, and "H1 and H2 supported". No Phase 2 model had been trained; those numbers were typed into the paper script.
+> - **Attention findings:** self-attention ≈ 0.65 and "+280% at onsets". There is no trained model to extract attention from.
+> - **Sensor 717468 "case study":** the figure was drawn from hand-made curves, not data. It has been removed.
+> - **Signal results:** "44.4% less delay" and "spillback 64% → 26%". The simulator file was committed empty, so these could not have come from it. The rebuilt simulator gives very different results (Section 4).
+> - **Latency and edge-hardware claims:** 0.82 ms / 4.80 ms. There was no measurement behind them.
+>
+> Do **not** use the old numbers in the viva. The measured results are below (and in `data/metadata/phase2/`).
 
 ---
 
-## 1. Why Phase 1 Wasn't Enough: The Physics of the Failure Mode
+## Summary
 
-### The Phase 1 Architecture & The Tabular Illusion
-In Phase 1, each sensor was modeled independently using 32 engineered features:
-- Autoregressive lags ($t, t-1, \dots, t-11$)
-- Rolling statistics (mean, std, min, max over 15m, 30m, 60m)
-- Time-of-day and day-of-week cyclical features
-- Historical average lookup profiles (in the 36-feature extension)
-
-On routine, recurring traffic days (e.g. standard Tuesday morning rush hours), traffic follows predictable diurnal rhythms. Tabular gradient boosting memorizes these profiles efficiently, producing strong overall MAE numbers (2.312 at 5m; 3.688 at 60m).
-
-### The Physical Breakdown: Lighthill-Whitham-Richards Kinematic Wave Theory
-In real traffic networks, traffic behaves as a compressible fluid governed by the continuity equation:
-$$\frac{\partial k}{\partial t} + \frac{\partial q}{\partial x} = 0$$
-where $k$ is vehicle density (veh/mile) and $q$ is flow rate (veh/hour).
-
-When a bottleneck, lane closure, or accident occurs:
-1. Traffic density spikes at the bottleneck, causing flow breakdown.
-2. A **backward-propagating shockwave** travels upstream against the flow of vehicles at characteristic wave speed:
-   $$v_w = \frac{\Delta q}{\Delta k} = \frac{q_{\text{upstream}} - q_{\text{bottleneck}}}{k_{\text{upstream}} - k_{\text{bottleneck}}} \approx -15 \text{ to } -25 \text{ km/h}$$
-3. An upstream detector located 1 to 2 miles behind the bottleneck experiences free-flowing traffic (65 mph) while the shockwave propagates toward it.
-4. **Why Phase 1 Failed:** Because Phase 1 models only saw their *own* sensor's past readings, the upstream model had zero information that a shockwave was propagating toward it. It continued predicting 65 mph until the shockwave physically crossed the detector loop, lagging behind reality by 45–60 minutes.
+- **Phase 1 recap.** Local models used only each sensor's own history. The best was XGBoost + historical-average features, with test MAE 2.312 / 2.844 / 3.275 / 3.688 at 5 / 15 / 30 / 60 min in source speed units. Error grows with horizon, which is consistent with a model that cannot see neighbouring sensors. Phase 1 did not test that explanation.
+- **Phase 2 question.** Does giving a forecaster neighbouring sensors through the road graph improve forecasts over equally capable models without the graph? It uses the same split, masks and history window. "No detectable gain" is an acceptable answer.
+- **What exists now.**
+  - GAT, DCRNN and the controls (`gru_local`, `gat_identity`, `gat_shuffled`, `dcrnn_identity`).
+  - A trainer that resumes after interruptions (Colab disconnects or a killed local process).
+  - An evaluation harness that reproduces the Phase 1 MAEs exactly.
+  - A simulated signal-control experiment.
+  - A paper builder that reads results from files.
+  - 107 Phase 2 unit tests, all passing.
+- **Headline results (60-min test MAE).** GAT 4.175 ± 0.007, DCRNN 3.734 ± 0.036, GRU Local 4.379, XGBoost + HA 3.688.
+  - The road graph helps both graph models against their identity-graph controls: GAT +0.189 [+0.154, +0.221], DCRNN +0.650 [+0.507, +0.785].
+  - A shuffled graph also helps GAT a little (+0.040 [+0.026, +0.054]), so H2 as pre-registered is contradicted, even though the real graph beats the shuffled one (+0.149).
+  - DCRNN beats XGBoost + HA at 15 and 30 min; at 5 and 60 min the difference is not detectable.
 
 ---
 
-## 2. How Phase 2 Solved the Problem: Spatiotemporal Graphs
+## 1. Why look at the road graph
 
-Phase 2 modeled the 207 sensors as nodes on a directed spatial graph ($G = (V, E, A)$) with 1,722 directed edges derived from highway distances.
+Phase 1 models saw only their own sensor's last hour: 12 lags, rolling statistics and calendar features, plus historical-average profiles in the 36-feature model. Kinematic-wave theory (Lighthill–Whitham–Richards) says congestion propagates along a corridor. A sensor's neighbours can therefore carry information about what will reach it. That is a **motivation**, not a result: whether METR-LA forecasts actually improve is what the H1–H4 tests decide.
 
-### The Architectures
-1. **Graph Attention Network (GAT)**:
-   - Uses multi-head masked attention to dynamically compute coupling coefficients $\alpha_{ij}$ between topological neighbors.
-   - When downstream sensor $j$ decelerates, attention mechanism dynamically increases the weight assigned to sensor $j$, alerting upstream sensor $i$ of the incoming wave.
-2. **Diffusion Convolutional Recurrent Neural Network (DCRNN)**:
-   - Models physical traffic movement using bidirectional random walks:
-     - Forward walk ($P_f = D_O^{-1} A$): Models downstream vehicle flow.
-     - Reverse walk ($P_r = D_I^{-1} A^T$): Models upstream shockwave propagation!
-   - Captures both convective flow and acoustic wave dynamics simultaneously.
+## 2. Models and controls
 
-### The Fair-Comparison Structural Controls
-To prove that improvements stemmed from *road network topology* and not merely from deep learning model capacity, we implemented three structural controls:
-- **`gru_local`**: Standard GRU with identical temporal capacity but zero spatial neighbor connections.
-- **`gat_identity`**: GAT with identity adjacency ($A = I$), testing multi-head attention without neighbor mixing.
-- **`gat_shuffled`**: Real road adjacency permuted by a fixed derangement, preserving node degree distribution while connecting topologically incorrect sensors.
+- **GAT** (`src/phase2/models/gat.py`). A shared GRU or 1-D convolution encodes each sensor's history. Masked multi-head attention mixes neighbours (logits for unconnected pairs are set to −1e9), followed by a residual head. Candidate 0 has 6,276 parameters.
+- **DCRNN** (`src/phase2/models/dcrnn.py`). K-hop diffusion with forward `D_out⁻¹A` and reverse `D_in⁻¹Aᵀ` random-walk supports, inside a DCGRU encoder–decoder. Candidate 2 has 131,009 parameters.
+- **Controls:**
+  - `gru_local`: a shared per-sensor GRU with no spatial mixing (5,124 parameters for candidate 0).
+  - `gat_identity` / `dcrnn_identity`: the same architecture with self-loops only.
+  - `gat_shuffled`: a node-permuted graph with the same degree structure.
 
----
+  Controls reuse the tuned parameters of their main model, which can slightly understate them.
 
-## 3. Four "Surprise Insights" that Impress Examiners
+Parameter counts are asserted in the unit tests and printed in paper Table IV.
 
-### Insight 1: The Non-Linear "Value of Information" in Congestion Dynamics
-Standard machine learning papers evaluate models on linear metrics: "Model A achieved MAE 3.68, Model B achieved 3.54 (a 3.8% gain)." A skeptical examiner rightly asks: *Why does a 0.14 speed error difference matter to a city?*
+## 3. Hypotheses (fixed before results; verdicts computed by code)
 
-**The Answer:** In queuing systems, delay is intensely **non-linear**.
-According to Webster's delay model and M/M/1 queuing theory, average vehicle delay $W_q$ scales as:
-$$W_q \propto \frac{\rho}{1 - \rho}$$
-where $\rho = \frac{\lambda}{\mu}$ is the volume-to-capacity ratio.
-- When $\rho = 0.70$, delay is modest.
-- As $\rho \to 0.95$, queue delay increases asymptotically.
-- When $\rho > 1.0$, the queue explodes toward infinity until capacity expands.
+| ID | Hypothesis | Verdict |
+|---|---|---|
+| H1 | `gat` beats `gru_local` at 30 and 60 min | supported (+0.118 at 30 min, +0.205 at 60 min) |
+| H2 | `gat` beats `gat_identity`; `gat_shuffled` no better than `gat_identity` | contradicted: part a supported (+0.189 at 60 min), part b contradicted (shuffled +0.040 [+0.026, +0.054]) |
+| H3 | `gat` vs `gat_identity` gain larger in peak than off-peak | supported (+0.109 [+0.043, +0.180] at 60 min) |
+| H4 | gain grows with horizon | supported (each step's interval above zero) |
+| H5 | gain larger at sensors with more neighbours / around congestion onsets | descriptive: Spearman 0.28 with degree; 60-min gain 2.22 at proxy onsets vs 0.10 elsewhere |
+| H0 | `gat`, `dcrnn` do not differ from `xgboost_ha` | contradicted: GAT worse at every horizon; DCRNN better at 15/30 min, no detectable difference at 5/60 min |
 
-During traffic shockwaves, traffic operates right at the critical bifurcation boundary ($\rho \approx 0.95 - 1.05$). A model that is **5% more accurate** during this transition regime allows an adaptive traffic signal controller to expand green phase duration *before* the queue overflows ramp storage capacity. Preventing the system from crossing $\rho > 1.0$ yields a disproportionate **44.4% reduction in commuter delay**!
+A claim counts as supported only if the whole 95% paired-bootstrap interval of the MAE reduction is above zero (2-day blocks, 2,000 resamples, seed 42).
 
-### Insight 2: Data-Driven Discovery of Physical Shockwaves (Attention Asymmetry)
-In physics-informed neural networks (PINNs), equations are hardcoded into the loss function. In GAT, the model was given only raw speeds and the road graph.
+## 4. Simulated signal control (software only)
 
-By extracting GAT attention weights ($\alpha_{ij}$) across time, we observed that:
-- During uncongested free-flow periods, attention is dominated by self-loops ($\alpha_{ii} \approx 0.65$).
-- During congestion onsets, attention dynamically shifts **asymmetrically toward upstream and downstream bottleneck nodes** ($\alpha_{ij}$ increases by up to 280%).
-The model autonomously *discovered* kinematic shockwave propagation purely by minimizing multi-horizon forecast error.
+`src/phase2/signal_sim/simulator.py`, run by `scripts/phase2_run_signal_sim.py`:
 
-### Insight 3: Resolution of the Sensor 717468 Crash Event
-In Phase 1, Sensor 717468 was the capstone's celebrated failure mode: on June 20, 2012 at 19:00, speed abruptly collapsed from 65 to 10 mph. Persistence, Random Forest, and XGBoost all failed, predicting high speeds for 45 minutes.
+- **Setup.** One main approach (2 lanes) and one cross approach (1 lane, 500 veh/h). 90 s cycle, 10 s lost time, green between 15 and 60 s (default 35 s), saturation flow 1,800 veh/h/lane, storage 60 vehicles.
+- **Arrivals and delay.** Greenshields-shaped arrivals. Delay is Webster's uniform term plus one cycle for each vehicle left in the queue.
+- **Experiment A (synthetic).** Speeds are synthetic. Forecasts are "true future speed + noise" sized to measured test MAEs: 2.970 for the local forecast (Phase 1 XGBoost 32, 15 min) and GAT's 2.905 / 3.443 (15 / 30 min) for the graph forecast, plus a two-cycle upstream lead. 4 scenarios × 4 policies × 5 seeds = 80 runs.
+- **Experiment B (real inputs).** Real test-period weekday speeds (06:00-21:00) at the 30 sensors with the most proxy congestion, and each model's actual test forecasts; 3,780 runs. Only the forecast source differs between predictive policies.
 
-In Phase 2, we performed a dedicated retrospective case study (`figures/phase2/fig_case_study.png`):
-- Neighbors adjacent to Sensor 717468 began decelerating at 18:40.
-- GAT and DCRNN utilized this neighbor telemetry to anticipate the collapse at Sensor 717468 at the exact onset timestamp, eliminating the 45-minute lag entirely.
+Experiment A: mean delay per vehicle in seconds, with spillback rate (`data/metadata/phase2/signal_sim_summary.json`):
 
-### Insight 4: The Pragmatic Industrial Scorecard (Edge Microcontroller Feasibility)
-Deep learning models are often too heavy for real-time edge hardware in municipal traffic cabinets:
-- **DCRNN** requires 131,009 parameters and takes 4.80 ms per inference pass.
-- **GAT (Candidate 0)** achieves virtually identical forecasting accuracy (3.58 vs 3.54 MAE) with **only 6,276 parameters** (under 1/20th the size) and 0.82 ms latency!
-A traffic department can deploy GAT on inexpensive edge microcontrollers (e.g. Raspberry Pi / ARM Cortex) inside standard NEMA TS2 traffic cabinets without requiring high-power server racks.
+| Scenario | Fixed-time | Reactive | Local predictive | Graph predictive |
+|---|---:|---:|---:|---:|
+| Morning peak | 222.3 (44.3%) | 26.9 (0%) | 24.9 (0%) | 23.9 (0%) |
+| Evening peak | 447.0 (63.5%) | 27.4 (0%) | 25.7 (0%) | 24.7 (0%) |
+| Incident | 297.5 (46.5%) | 27.6 (0%) | 26.3 (0%) | 25.7 (0%) |
+| Off-peak | 19.6 (0%) | 27.5 (0%) | 25.7 (0%) | 23.9 (0%) |
 
----
+Experiment B: delay saved per vehicle relative to the XGBoost + HA forecast (`signal_sim_real_summary.json`): DCRNN +0.01 s [-0.02, +0.04], GAT -0.19 s, GRU Local -0.31 s, reactive -0.67 s, perfect forecast +0.40 s. Fixed timing cannot keep up with the assumed full-day demand (delay grows without bound).
 
-## 4. The Real-World Proof: Simulated Adaptive Signal Control
+**What this supports.**
+- In congested conditions, any adaptive policy is far better than fixed timing.
+- Forecast accuracy changes delay by fractions of a second per vehicle; even a perfect forecast adds only 0.4 s in this simulator.
+- Off-peak (experiment A), fixed timing is best.
 
-To prove that Phase 2 is valid and working in practice, we implemented `src/phase2/signal_sim/`:
-
-### Simulated Intersection Environment
-- Signalized freeway off-ramp corridor connecting to surface arterial.
-- Cycle length: $C = 90$s, yellow clearance: $Y = 5$s.
-- Green split range: $g \in [15\text{s}, 60\text{s}]$, default $g_{\text{fixed}} = 35\text{s}$.
-- Saturation flow: $s = 1800$ veh/hour/lane across 2 approach lanes.
-- Ramp storage capacity: 45 vehicles ($\approx 350$ meters) before mainline freeway spillback occurs.
-- Vehicle arrival rate: Governed by Greenshields fundamental diagram $q(v) = k_{\text{jam}} v (1 - v / v_{\text{free}})$.
-
-### Benchmark Results Across 80 Runs (5 Seeds, 4 Regimes)
-
-| Operating Scenario | Signal Policy | Mean Delay (s/veh) | Spillback Rate (%) | Fuel Proxy (Liters) |
-|---|---|---|---|---|
-| **Incident Shockwave** | Fixed-Time (Pretimed) | 202.6 ± 1.2 | 64.0% | 291.6 |
-| **Incident Shockwave** | Reactive Actuated | 141.9 ± 3.4 | 35.2% | 263.6 |
-| **Incident Shockwave** | Local Predictive (P1 XGB) | 152.4 ± 7.0 | 47.8% | 290.5 |
-| **Incident Shockwave** | **Graph Predictive (P2 GAT)** | **112.6 ± 12.4** | **26.0%** | **232.7** |
-| Morning Peak | Fixed-Time | 248.9 ± 1.9 | 76.5% | 407.0 |
-| Morning Peak | Reactive Actuated | 243.3 ± 2.6 | 74.3% | 475.0 |
-| Morning Peak | Local Predictive (P1) | 246.0 ± 3.1 | 75.7% | 468.2 |
-| Morning Peak | **Graph Predictive (P2)** | **206.0 ± 10.2** | **62.5%** | **481.8** |
-| Evening Peak | Fixed-Time | 269.0 ± 3.4 | 80.3% | 473.6 |
-| Evening Peak | Reactive Actuated | 256.3 ± 5.8 | 77.7% | 582.8 |
-| Evening Peak | Local Predictive (P1) | 261.7 ± 3.5 | 79.5% | 581.0 |
-| Evening Peak | **Graph Predictive (P2)** | **248.6 ± 3.9** | **74.2%** | **644.7** |
-| Off-Peak Baseline | Fixed-Time | 27.3 ± 0.3 | 0.0% | 28.5 |
-| Off-Peak Baseline | **Graph Predictive (P2)** | **22.8 ± 3.1** | **0.0%** | **25.9** |
-
-### Key Takeaways from Simulation:
-1. **44.4% Delay Reduction**: In shockwave regimes, Graph Predictive control reduced mean delay from 202.6s to 112.6s.
-2. **Mainline Spillback Mitigation**: Cut freeway spillback probability from 64.0% down to 26.0%. This prevents exit ramps from backing up into active freeway travel lanes, avoiding secondary multi-vehicle collisions.
-3. **Why Reactive Fails**: Reactive controllers only extend green *after* detector speeds drop and queues have already formed. By that time, the ramp is already full. Graph predictive control flushes the queue 5–15 minutes ahead of the surge.
-4. **Energy & Emissions Benefit**: Reducing stop-and-go cycles and idling delay saved ~58.9 Liters of fuel per incident event (~136 kg CO2 reduction).
+These are properties of the simulator under its assumptions. They say nothing about real signals.
 
 ---
 
-## 5. Master Viva Defense Guide: Questions & Model Answers
+## 5. Viva questions and defensible answers
 
-### Q1: "Your deep learning models beat XGBoost by only ~0.15 MAE at 60 minutes. Is the added complexity of GNNs actually justified?"
-**Person E Answer:**  
-*"That is precisely why we conducted our downstream signal control simulation. In traffic systems, evaluating models purely on aggregate MAE hides the true problem. On routine free-flowing traffic, tree models perform well because diurnal patterns dominate. The critical 5% of traffic operations where cities fail is during non-recurrent shockwaves and bottleneck transitions.*  
-*In those specific transition regimes, a 0.15 MAE reduction at 60 minutes reflects the difference between anticipating an accident versus lagging behind it by 45 minutes. Because queueing delay is intensely non-linear ($W_q \propto \frac{\rho}{1-\rho}$), that 'modest' MAE gain prevents the volume-to-capacity ratio from crossing 1.0, translating to a 44.4% reduction in commuter delay and cutting freeway spillback from 64% to 26%. Furthermore, our GAT model has only 6,276 parameters, meaning the computational complexity is actually lower than an ensemble of 100 deep decision trees."*
+**Q1. Did the graph models beat XGBoost?**
+*"Partly. DCRNN has lower test MAE than XGBoost + HA at 15 and 30 minutes, and at 5 and 60 minutes the interval includes zero. GAT is worse than XGBoost + HA at every horizon. But XGBoost + HA has historical-average features the deep models don't get, so this comparison does not isolate the graph. Only `gat` vs `gat_identity` / `gru_local` and `dcrnn` vs `dcrnn_identity` do, and those show clear gains."*
 
-### Q2: "How do you know the improvement in GAT came from the road network graph and not simply from the expressive power of neural networks?"
-**Person E Answer:**  
-*"We pre-registered formal structural controls to isolate this exact effect:  
-1. `gru_local`: An identical temporal GRU model with the exact same capacity but zero spatial neighbor connections. GAT beat `gru_local` with a statistically significant 95% bootstrap confidence interval strictly above zero (H1 supported).  
-2. `gat_identity`: GAT executed with identity adjacency (self-loops only). GAT beat `gat_identity` (H2 supported).  
-3. `gat_shuffled`: The real road adjacency matrix was randomly permuted while preserving node degrees. GAT Shuffled performed no better than GAT Identity, proving that providing random or incorrect road connections destroys the model's advantage.  
-This triangulates that the performance gain is strictly attributable to the true physical topology of the highway graph."*
+**Q2. How would you know a gain came from the graph and not from model capacity?**
+*"Through the controls. `gru_local` has the same temporal capacity with no neighbours. `gat_identity` is the same architecture with self-loops only. `gat_shuffled` keeps the degree structure but connects the wrong sensors. If GAT beats the first two and the shuffled graph doesn't help, the gain is tied to the real road graph. In our results the shuffled graph helped a little (+0.040 at 60 min) while the real graph helped much more (+0.189), so most but not all of the gain is tied to the true links. That is why H2 is reported as contradicted. The bootstrap verdicts decide each step; we don't decide by eye."*
 
-### Q3: "Why did you use a simulation instead of deploying to real traffic signals?"
-**Person E Answer:**  
-*"Deploying unverified predictive algorithms to real municipal traffic controllers carries severe safety, legal, and operational risks—a bad signal split could gridlock an entire freeway corridor. In transportation engineering, every adaptive signal policy (such as SCATS or SCOOT) is evaluated first in rigorous calibrated microscopic/macroscopic simulations.  
-Our simulation is grounded in established transportation theory: vehicle arrival rates follow Greenshields fundamental diagram, delays follow Webster's two-term model, and vehicle queues strictly obey conservation laws. We explicitly labeled all experiments as 'simulated' to ensure scientific honesty."*
+**Q3. Why a simulation instead of real signals?**
+*"Testing an unvalidated controller on real signals would be unsafe, and we don't have access to one. The simulator is a simple queue model with synthetic inputs. We report it as simulated and use it only to show what a given forecast accuracy is worth under stated assumptions."*
 
-### Q4: "What happened to the Sensor 717468 crash event from Phase 1?"
-**Person E Answer:**  
-*"In Phase 1, Sensor 717468 was our worst-case failure mode: an abrupt crash at 19:00 on June 20, 2012 where all local models lagged by 45 minutes. In Phase 2, we specifically revisited this sensor in our case study (`fig_case_study.png`). Because downstream and upstream sensors experienced the shockwave 15–20 minutes earlier, GAT's multi-head attention dynamically assigned higher attention weights to those connected neighbors. As a result, GAT anticipated the collapse at the exact onset time, completely resolving the Phase 1 failure mode."*
+**Q4. Your simulation shows less than 1 s/veh benefit from a better forecast. Isn't that disappointing?**
+*"It's the honest result. With real speeds and real forecasts, even a perfect forecast saves only 0.4 s per vehicle over the XGBoost forecast. The big effect is adaptive versus fixed timing. In this simple queue model green time is sized from the worst speed signal, so small forecast errors rarely change the decision."*
+
+**Q5. What about Sensor 717468 from Phase 1?**
+*"Paper Fig. 9 now plots the observed speed at that sensor on 2012-06-11 against every model's real test forecast. It is one hand-picked event, chosen after evaluation, so it is illustrative only; the aggregate tables carry the evidence. The earlier figure was removed because it was not based on data."*
+
+**Q6. Do attention weights show shockwaves?**
+*"No. Attention shows what the model weighted, not how traffic moves. For the trained GAT, about 90% of attention goes to neighbours and 10% to the sensor itself, almost the same at peak and off-peak. That says the model uses neighbours, not that it tracks shockwaves."*
 
 ---
 
-## 6. Verification Checklist & Repository Artifacts
+## 6. Status checklist
 
-- **Phase 1 Freezing Verification**: `scripts/phase2_check_phase1_frozen.py` prints **OK**.
-- **Unit Test Suite**: `python -m unittest discover -s tests -p "test_phase2_*.py" -v` -> **96 passed, 0 failed**.
-- **Signal Simulation Benchmark**: `python scripts/phase2_run_signal_sim.py` -> **80 runs evaluated**.
-- **IEEE Research Paper**: `python scripts/build_phase2_paper.py` -> Generated `reports/paper_phase2/phase2_ieee_paper.pdf` (1.5 MB) and `phase2_ieee_paper.tex`.
-- **Claims QA Audit**: `reports/phase2/qa_claims_checklist.md` -> **PASSED**.
-- **Teammate Reproduction Guide**: `reports/phase2/reproduction.md` -> **COMPLETE**.
-
+| Item | Status |
+|---|---|
+| `scripts/phase2_check_phase1_frozen.py` | OK |
+| `python -m unittest discover -s tests -p "test_phase2_*.py"` | 107 tests, OK |
+| Training (GRU Local, GAT + controls, DCRNN + control) | done, Apple M3 (MPS), 11.2 h; `run_meta.csv` |
+| `scripts/phase2_eval_all.py` on real predictions | done; Phase 1 parity passed |
+| Signal simulation (`scripts/phase2_run_signal_sim.py`) | experiment A 80 runs, experiment B 3,780 runs, reproducible |
+| Paper, slides, notebook | built from evaluation outputs |
+| Claims QA (`reports/phase2/qa_claims_checklist.md`) | closed |
+| Reproduction guide (`reports/phase2/reproduction.md`) | complete with measured timings |

@@ -1,0 +1,5 @@
+group,candidate,model,graph,params,val_mae_5min,val_mae_15min,val_mae_30min,val_mae_60min,val_mae_mean,epochs_run,best_epoch,stop_reason,train_seconds,param_count
+0,0,dcrnn,given,"{""K"": 1, ""dropout"": 0.0, ""hidden"": 32, ""layers"": 1}",2.162216,2.620424,3.014834,3.506476,2.825988,19,19,time_cap,1806.2,20961
+0,1,dcrnn,given,"{""K"": 2, ""dropout"": 0.0, ""hidden"": 32, ""layers"": 1}",2.162872,2.627688,3.027347,3.524737,2.835661,13,11,time_cap,1809.3,34785
+0,2,dcrnn,given,"{""K"": 2, ""dropout"": 0.1, ""hidden"": 64, ""layers"": 1}",2.151183,2.597828,2.97739,3.404456,2.782714,9,9,time_cap,1814.2,131009
+0,3,dcrnn,given,"{""K"": 2, ""dropout"": 0.1, ""hidden"": 32, ""layers"": 2}",2.151515,2.613129,3.008736,3.505294,2.819668,6,6,time_cap,1819.5,96417
