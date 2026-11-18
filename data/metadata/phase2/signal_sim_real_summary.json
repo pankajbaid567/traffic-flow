@@ -1,0 +1,120 @@
+{
+  "metadata": {
+    "evaluation_type": "simulated_signal_control_real_inputs",
+    "disclaimer": "Software simulation of one signalised approach. Speeds are real METR-LA test-period readings and forecasts are the trained models' test predictions, but arrivals are generated from speed by an assumed rule; not a field result.",
+    "window": "test weekdays 06:00-21:00 stored clock, 18 days",
+    "sensors": [
+      "716339",
+      "717453",
+      "717458",
+      "717461",
+      "773023",
+      "717450",
+      "764853",
+      "717462",
+      "716331",
+      "717493",
+      "717446",
+      "769430",
+      "716939",
+      "717466",
+      "718045",
+      "769346",
+      "717495",
+      "760024",
+      "769431",
+      "716955",
+      "769444",
+      "769359",
+      "717504",
+      "716958",
+      "717468",
+      "772151",
+      "773939",
+      "717472",
+      "717499",
+      "717816"
+    ],
+    "sensor_selection": "largest share of proxy-congested readings on test weekdays (observed data only)",
+    "forecast_sources": [
+      "xgboost_ha",
+      "gru_local",
+      "gat",
+      "dcrnn",
+      "perfect (observed future speed, reference only)"
+    ],
+    "policy_signals": "current speed + 15-min and 30-min forecasts from the latest 5-min origin",
+    "cycle_length_s": 90.0,
+    "runs": 3780,
+    "bootstrap": "2000 day resamples, seed 42"
+  },
+  "policies": {
+    "fixed_pretimed": {
+      "mean_delay_s": 2179.23,
+      "spillback_rate_pct": 72.84,
+      "fuel_consumption_proxy": 23082.95
+    },
+    "forecast_dcrnn": {
+      "mean_delay_s": 26.67,
+      "spillback_rate_pct": 0.0,
+      "fuel_consumption_proxy": 421.31
+    },
+    "forecast_gat": {
+      "mean_delay_s": 26.88,
+      "spillback_rate_pct": 0.0,
+      "fuel_consumption_proxy": 423.18
+    },
+    "forecast_gru_local": {
+      "mean_delay_s": 27.0,
+      "spillback_rate_pct": 0.0,
+      "fuel_consumption_proxy": 424.2
+    },
+    "forecast_perfect": {
+      "mean_delay_s": 26.28,
+      "spillback_rate_pct": 0.0,
+      "fuel_consumption_proxy": 417.19
+    },
+    "forecast_xgboost_ha": {
+      "mean_delay_s": 26.68,
+      "spillback_rate_pct": 0.0,
+      "fuel_consumption_proxy": 421.66
+    },
+    "reactive_actuated": {
+      "mean_delay_s": 27.35,
+      "spillback_rate_pct": 0.0,
+      "fuel_consumption_proxy": 427.74
+    }
+  },
+  "paired_vs_xgboost_ha": {
+    "fixed_pretimed": {
+      "delay_reduction_vs_xgboost_ha_s": -2152.548,
+      "ci95_low": -2423.753,
+      "ci95_high": -1910.784
+    },
+    "forecast_dcrnn": {
+      "delay_reduction_vs_xgboost_ha_s": 0.011,
+      "ci95_low": -0.02,
+      "ci95_high": 0.044
+    },
+    "forecast_gat": {
+      "delay_reduction_vs_xgboost_ha_s": -0.192,
+      "ci95_low": -0.241,
+      "ci95_high": -0.144
+    },
+    "forecast_gru_local": {
+      "delay_reduction_vs_xgboost_ha_s": -0.312,
+      "ci95_low": -0.36,
+      "ci95_high": -0.264
+    },
+    "forecast_perfect": {
+      "delay_reduction_vs_xgboost_ha_s": 0.402,
+      "ci95_low": 0.332,
+      "ci95_high": 0.463
+    },
+    "reactive_actuated": {
+      "delay_reduction_vs_xgboost_ha_s": -0.67,
+      "ci95_low": -0.709,
+      "ci95_high": -0.628
+    }
+  }
+}

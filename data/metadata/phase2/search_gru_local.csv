@@ -1,0 +1,5 @@
+group,candidate,model,graph,params,val_mae_5min,val_mae_15min,val_mae_30min,val_mae_60min,val_mae_mean,epochs_run,best_epoch,stop_reason,train_seconds,param_count
+0,0,gru_local,identity,"{""dropout"": 0.0, ""hidden"": 32, ""layers"": 1}",2.205634,2.733645,3.248062,3.935025,3.030591,60,60,max_epochs,678.8,5124
+0,1,gru_local,identity,"{""dropout"": 0.0, ""hidden"": 64, ""layers"": 1}",2.193075,2.723994,3.232998,3.907167,3.014309,44,42,time_cap,901.1,18436
+0,2,gru_local,identity,"{""dropout"": 0.1, ""hidden"": 32, ""layers"": 2}",2.197182,2.724319,3.232265,3.917401,3.017792,44,40,time_cap,901.0,11460
+0,3,gru_local,identity,"{""dropout"": 0.2, ""hidden"": 64, ""layers"": 2}",2.19535,2.725577,3.23335,3.913834,3.017028,23,20,time_cap,902.0,43396

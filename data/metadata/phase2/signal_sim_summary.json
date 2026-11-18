@@ -5,9 +5,9 @@
     "forecast_source": "synthetic: true future speed + Gaussian noise sized to a forecast MAE",
     "forecast_mae": {
       "local_15m_mae": 2.97,
-      "graph_15m_mae": 2.762,
-      "graph_30m_mae": 3.148,
-      "source": "local: XGBoost 32 test MAE from data/metadata/phase1_metrics.csv; graph: GAT test MAE as written in scripts/build_phase2_paper.py (not yet backed by a tracked evaluation output)"
+      "graph_15m_mae": 2.905,
+      "graph_30m_mae": 3.443,
+      "source": "local: XGBoost 32 test MAE; graph: GAT test MAE (mean over seeds); both from data/metadata/phase2/metrics_summary.csv"
     },
     "neighbor_lead_cycles_assumed": 2,
     "cycle_length_s": 90.0,
@@ -40,11 +40,11 @@
         "fuel_consumption_proxy": 76.88
       },
       "predictive_graph_p2": {
-        "mean_delay_s": 23.88,
-        "std_delay_s": 0.57,
+        "mean_delay_s": 23.85,
+        "std_delay_s": 0.58,
         "spillback_rate_pct": 0.0,
         "throughput_vph": 1628.1,
-        "fuel_consumption_proxy": 75.06
+        "fuel_consumption_proxy": 75.0
       }
     },
     "evening_peak": {
@@ -70,11 +70,11 @@
         "fuel_consumption_proxy": 89.75
       },
       "predictive_graph_p2": {
-        "mean_delay_s": 24.69,
-        "std_delay_s": 1.21,
+        "mean_delay_s": 24.68,
+        "std_delay_s": 1.22,
         "spillback_rate_pct": 0.0,
         "throughput_vph": 1831.5,
-        "fuel_consumption_proxy": 87.62
+        "fuel_consumption_proxy": 87.61
       }
     },
     "shockwave_incident": {
@@ -100,11 +100,11 @@
         "fuel_consumption_proxy": 64.64
       },
       "predictive_graph_p2": {
-        "mean_delay_s": 25.71,
-        "std_delay_s": 2.34,
+        "mean_delay_s": 25.67,
+        "std_delay_s": 2.35,
         "spillback_rate_pct": 0.0,
         "throughput_vph": 1337.5,
-        "fuel_consumption_proxy": 63.89
+        "fuel_consumption_proxy": 63.84
       }
     },
     "off_peak": {
@@ -130,11 +130,11 @@
         "fuel_consumption_proxy": 57.51
       },
       "predictive_graph_p2": {
-        "mean_delay_s": 23.89,
+        "mean_delay_s": 23.76,
         "std_delay_s": 0.46,
         "spillback_rate_pct": 0.0,
         "throughput_vph": 1254.4,
-        "fuel_consumption_proxy": 55.01
+        "fuel_consumption_proxy": 54.84
       }
     }
   }
